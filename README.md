@@ -6,6 +6,17 @@ Built for validation sessions with real stock/options/futures/FX traders — the
 UI and interactions are real; the news data is a realistic mock layer (see
 [ARCHITECTURE.md](./ARCHITECTURE.md) for how the real thing drops in).
 
+## Live demo (GitHub Pages)
+
+Every push to `main` deploys a static build to
+**https://htbot34.github.io/TapeWire/** via the workflow in
+`.github/workflows/deploy-pages.yml`.
+
+Pages is static hosting, so the one server feature — the live AI call behind
+the "?" explainer — runs in canned demo mode there (clearly labeled in the
+panel). Everything else is identical. For live AI explanations, deploy to
+Vercel with `ANTHROPIC_API_KEY` set, or run locally with a `.env`.
+
 ## Setup
 
 ```bash

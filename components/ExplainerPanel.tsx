@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { NewsItem } from "@/lib/news/types";
 import { usePrefs } from "@/lib/store";
 import { shortTime } from "@/lib/time";
+import { mockExplanation } from "@/lib/explainFallback";
 
 type Status = "loading" | "streaming" | "done" | "error";
 
@@ -37,6 +38,13 @@ export default function ExplainerPanel({
         body: JSON.stringify({ item, watchlist }),
         signal: controller.signal,
       });
+      // Static hosting (GitHub Pages) has no API route at all — fall back to
+      // the canned client-side explanation instead of an error state.
+      if (res.status === 404 || res.status === 405) {
+        setText(mockExplanation(item, watchlist));
+        setStatus("done");
+        return;
+      }
       if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
