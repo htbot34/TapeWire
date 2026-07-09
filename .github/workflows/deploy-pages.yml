@@ -1,9 +1,9 @@
 name: Deploy to GitHub Pages
 
-# Publishes the static export to the gh-pages branch. GitHub automatically
-# serves that branch at https://<owner>.github.io/<repo>/ — no repo-settings
-# change needed (the Actions-source deployment path requires the Pages site
-# to be created via settings first, which the workflow token cannot do).
+# The repo's Pages configuration serves the ROOT of the main branch, so this
+# workflow builds the static export and commits the built site into main's
+# root (guarded with [skip ci] against retriggering itself). It also mirrors
+# the build to a gh-pages branch in case Pages is ever pointed there instead.
 
 on:
   push:
@@ -39,8 +39,30 @@ jobs:
           STATIC_EXPORT: "1"
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
 
-      # Adds .nojekyll automatically so the _next/ asset dir is served.
+      # Mirror to gh-pages (adds .nojekyll automatically) — used if the Pages
+      # source is ever switched to that branch.
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./out
+
+      # Publish into main's root — the currently configured Pages source.
+      # index.html + .nojekyll make Pages serve the app instead of the
+      # Jekyll-rendered README.
+      - name: Commit static site to main root
+        run: |
+          git checkout HEAD -- app/api
+          git rm -r -q --ignore-unmatch _next 404 briefing onboarding settings \
+            404.html index.html index.txt icon.svg .nojekyll
+          cp -r out/. .
+          rm -rf out
+          touch .nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Site unchanged — nothing to commit"
+          else
+            git commit -m "Publish static site to Pages root [skip ci]"
+            git push origin main
+          fi

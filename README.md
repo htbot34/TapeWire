@@ -12,6 +12,12 @@ Every push to `main` deploys a static build to
 **https://htbot34.github.io/TapeWire/** via the workflow in
 `.github/workflows/deploy-pages.yml`.
 
+Because this repo's Pages configuration serves the root of `main`, the
+workflow commits the built site (`index.html`, `_next/`, `briefing/`,
+`onboarding/`, `settings/`, `404.html`, `.nojekyll`) into the repo root —
+those files are generated; don't edit them by hand. The build is also
+mirrored to the `gh-pages` branch.
+
 Pages is static hosting, so the one server feature — the live AI call behind
 the "?" explainer — runs in canned demo mode there (clearly labeled in the
 panel). Everything else is identical. For live AI explanations, deploy to
