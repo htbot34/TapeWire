@@ -65,4 +65,8 @@ jobs:
           else
             git commit -m "Publish static site to Pages root [skip ci]"
             git push origin main
+            # Keep the dev branch in sync too — the repo's Pages source has
+            # pointed at it, and serving works from any branch this way.
+            git push origin HEAD:claude/tapewire-news-prototype-11h9im \
+              || echo "dev branch diverged; skipping sync"
           fi
