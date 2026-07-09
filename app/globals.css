@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-950 text-text-hi antialiased;
+}
+
+/* Tabular numerals everywhere monospace data appears */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Quiet, terminal-style scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1f2a3a transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #1f2a3a;
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ── Breaking banner takeover ──────────────────────────────────────────────
+   The one deliberate moment of motion in the app: two sharp flashes, like a
+   squawk light, then steady. No bounce, no slide. */
+@keyframes breaking-flash {
+  0% {
+    background-color: #e5484d;
+  }
+  18% {
+    background-color: #2a0d10;
+  }
+  36% {
+    background-color: #b23237;
+  }
+  54% {
+    background-color: #2a0d10;
+  }
+  100% {
+    background-color: #2a0d10;
+  }
+}
+
+.breaking-takeover {
+  background-color: #2a0d10;
+  animation: breaking-flash 0.9s steps(1, end) 1;
+}
+
+@keyframes breaking-edge {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.breaking-edge-pulse {
+  animation: breaking-edge 1.6s ease-in-out 3;
+}
+
+/* Skeleton shimmer for the explainer loader — subdued pulse only */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+.skeleton {
+  @apply rounded bg-ink-800;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breaking-takeover,
+  .breaking-edge-pulse,
+  .skeleton {
+    animation: none !important;
+  }
+}
