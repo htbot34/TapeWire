@@ -760,10 +760,58 @@ const seeds: Seed[] = [
 let seq = 0;
 const makeId = () => `tw-${(++seq).toString().padStart(3, "0")}`;
 
+// Plausible source URLs for the "View source →" link in the expanded row.
+// Stubs pointing at real domains — the real product carries the canonical
+// article/tweet/calendar URL on every wire item.
+const SOURCE_DOMAINS: Record<string, string> = {
+  Reuters: "https://www.reuters.com/markets/",
+  CNBC: "https://www.cnbc.com/markets/",
+  Bloomberg: "https://www.bloomberg.com/news/articles/",
+  ForexLive: "https://www.forexlive.com/news/",
+  CoinDesk: "https://www.coindesk.com/markets/",
+  "Nikkei Asia": "https://asia.nikkei.com/Business/Markets/",
+  "The Information": "https://www.theinformation.com/articles/",
+  "Business Wire": "https://www.businesswire.com/news/home/",
+  "Detroit Free Press": "https://www.freep.com/story/money/cars/",
+  Barclays: "https://www.cnbc.com/markets/",
+  "Morgan Stanley": "https://www.cnbc.com/markets/",
+  BLS: "https://www.bls.gov/news.release/cpi.htm",
+  DOL: "https://www.dol.gov/ui/data.pdf",
+  EIA: "https://www.eia.gov/petroleum/supply/weekly/",
+  "US Treasury": "https://www.treasurydirect.gov/auctions/announcements-data-results/",
+  "Federal Reserve": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+  Destatis: "https://www.destatis.de/EN/Press/",
+  "Customs GA": "https://english.customs.gov.cn/",
+  "Stats NZ": "https://www.stats.govt.nz/news/",
+  "S&P Global": "https://www.pmi.spglobal.com/Public/Release/PressReleases",
+  NYSE: "https://www.nyse.com/trade-halt",
+};
+
+const slug = (headline: string) =>
+  headline
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 7)
+    .join("-");
+
+export function mockSourceUrl(source: string, headline: string): string {
+  if (source.startsWith("@")) {
+    // Tweets link to the handle's timeline (a plausible status URL would 404).
+    return `https://x.com/${source.slice(1)}`;
+  }
+  const base = SOURCE_DOMAINS[source];
+  if (!base) return `https://www.google.com/search?q=${encodeURIComponent(headline)}`;
+  // Gov/data releases point straight at the release page; outlets get a slug.
+  return base.endsWith("/") ? `${base}${slug(headline)}/` : base;
+}
+
 export const mockNewsItems: NewsItem[] = seeds.map(({ minutesAgo, ...rest }) => ({
   ...rest,
   id: makeId(),
   timestamp: ts(minutesAgo),
+  url: rest.url ?? mockSourceUrl(rest.source, rest.headline),
 }));
 
 // Pool of canned high-impact items used by simulateBreakingNews(). Each fire
@@ -854,5 +902,36 @@ export function buildBreakingItem(index: number): NewsItem {
     ...seed,
     id: `tw-breaking-${Date.now()}`,
     timestamp: new Date().toISOString(),
+    url: seed.url ?? mockSourceUrl(seed.source, seed.headline),
+  };
+}
+
+/**
+ * One synthesized item per user-added custom source, so an added URL/@handle
+ * demonstrably shows up on the tape with its own source tag. Clearly labeled
+ * a prototype simulation — real ingestion is future work (ARCHITECTURE.md).
+ */
+export function buildCustomSourceItem(sourceName: string): NewsItem {
+  const handle = sourceName.startsWith("@");
+  return {
+    id: `tw-custom-${sourceName.toLowerCase().replace(/[^a-z0-9@]/g, "-")}`,
+    headline: handle
+      ? `${sourceName}: Sample post — your custom source is on the tape`
+      : `${sourceName}: Sample item — your custom source is on the tape`,
+    source: sourceName,
+    sourceType: handle ? "social" : "outlet",
+    timestamp: ts(20),
+    impact: "low",
+    tickers: [],
+    assetClasses: ["equities", "options", "futures", "forex", "crypto"],
+    eventType: handle ? "tweet" : "other",
+    body: "Simulated item for the prototype: TapeWire stored this custom source and will ingest it for real in production (fetch, parse, classify pipeline per source type). This placeholder confirms where its items will appear and how they'll be tagged.",
+    url: handle
+      ? `https://x.com/${sourceName.slice(1)}`
+      : sourceName.includes(".")
+        ? sourceName.startsWith("http")
+          ? sourceName
+          : `https://${sourceName}`
+        : undefined,
   };
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { newsProvider } from "@/lib/news";
 import type { NewsItem } from "@/lib/news/types";
-import { usePrefs } from "@/lib/store";
+import { sourceFilterFor, usePrefs } from "@/lib/store";
 import FilterBar, { type FeedFilterState } from "./FilterBar";
 import NewsRow from "./NewsRow";
 import ExplainerPanel from "./ExplainerPanel";
@@ -14,16 +14,21 @@ const INITIAL_FILTERS: FeedFilterState = {
   impacts: [],
   eventType: "all",
   symbols: [],
+  sourceId: "all",
 };
 
 export default function FeedView() {
-  const { watchlist, assetClasses } = usePrefs();
+  const { watchlist, assetClasses, sources } = usePrefs();
   const [filters, setFilters] = useState<FeedFilterState>(INITIAL_FILTERS);
   const [items, setItems] = useState<NewsItem[] | null>(null);
   const [explaining, setExplaining] = useState<NewsItem | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   const load = useCallback(() => {
+    const selectedSource =
+      filters.sourceId === "all"
+        ? undefined
+        : sources.find((s) => s.id === filters.sourceId);
     newsProvider
       .getFeed({
         watchlist,
@@ -32,9 +37,13 @@ export default function FeedView() {
         impacts: filters.impacts.length ? filters.impacts : undefined,
         eventTypes: filters.eventType === "all" ? undefined : [filters.eventType],
         symbols: filters.symbols.length ? filters.symbols : undefined,
+        ...(selectedSource ? sourceFilterFor(selectedSource) : {}),
+        customSources: sources
+          .filter((s) => s.kind === "custom" && s.enabled)
+          .map((s) => s.name),
       })
       .then(setItems);
-  }, [watchlist, assetClasses, filters]);
+  }, [watchlist, assetClasses, sources, filters]);
 
   useEffect(() => {
     load();
@@ -56,7 +65,12 @@ export default function FeedView() {
 
   return (
     <>
-      <FilterBar filters={filters} watchlist={watchlist} onChange={setFilters} />
+      <FilterBar
+        filters={filters}
+        watchlist={watchlist}
+        sources={sources}
+        onChange={setFilters}
+      />
 
       <main className="mx-auto max-w-6xl">
         {items === null ? (

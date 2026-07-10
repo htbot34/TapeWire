@@ -28,6 +28,39 @@ export function shortTime(iso: string): string {
   });
 }
 
+/** "Jul 10" from ISO timestamp, local time. */
+export function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/**
+ * "Jul 10 · 14:32" — the unambiguous stamp every row carries so overnight and
+ * multi-day items are never confused about which day they happened.
+ */
+export function dateTimeStamp(iso: string): string {
+  return `${shortDate(iso)} · ${shortTime(iso)}`;
+}
+
+/** Local timezone abbreviation, e.g. "EST", "GMT+2" — for the calendar header. */
+export function tzLabel(d: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat([], { timeZoneName: "short" }).formatToParts(d);
+  return parts.find((p) => p.type === "timeZoneName")?.value ?? "local";
+}
+
+/** True when both ISO timestamps fall on the same local calendar day. */
+export function sameLocalDay(a: string | Date, b: string | Date): boolean {
+  const da = new Date(a);
+  const db = new Date(b);
+  return (
+    da.getFullYear() === db.getFullYear() &&
+    da.getMonth() === db.getMonth() &&
+    da.getDate() === db.getDate()
+  );
+}
+
 /** True when local time is before 09:30 (used for briefing-first landing). */
 export function isPreMarket(d: Date = new Date()): boolean {
   return d.getHours() < 9 || (d.getHours() === 9 && d.getMinutes() < 30);

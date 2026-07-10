@@ -15,9 +15,27 @@ export function ImpactDot({ impact }: { impact: Impact }) {
   );
 }
 
-export function TickerChip({ symbol }: { symbol: string }) {
+/**
+ * Ticker tag on a row. `inWatchlist` gets the filled accent treatment so the
+ * trader sees "this touches MY symbols" at a glance; other affected tickers
+ * stay outlined/muted.
+ */
+export function TickerChip({
+  symbol,
+  inWatchlist = false,
+}: {
+  symbol: string;
+  inWatchlist?: boolean;
+}) {
   return (
-    <span className="tnum inline-flex shrink-0 items-center rounded-sm border border-ink-700 bg-ink-850 px-1 py-px font-mono text-2xs text-text-mid">
+    <span
+      className={`tnum inline-flex shrink-0 items-center rounded-sm border px-1 py-px font-mono text-2xs ${
+        inWatchlist
+          ? "border-phos/60 bg-phos-faint font-semibold text-phos"
+          : "border-ink-700 bg-ink-850 text-text-mid"
+      }`}
+      title={inWatchlist ? `${symbol} — on your watchlist` : symbol}
+    >
       {symbol}
     </span>
   );

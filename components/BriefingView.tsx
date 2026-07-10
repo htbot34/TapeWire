@@ -4,9 +4,15 @@ import { useEffect, useState } from "react";
 import { newsProvider } from "@/lib/news";
 import type { NewsItem } from "@/lib/news/types";
 import { usePrefs } from "@/lib/store";
-import { briefingDate, relativeTime, shortTime } from "@/lib/time";
+import { briefingDate, dateTimeStamp, relativeTime } from "@/lib/time";
 import { ImpactDot, ReactionChip, SourceTag, TickerChip } from "./atoms";
 import ExplainerPanel from "./ExplainerPanel";
+
+function useWatchlistCheck() {
+  const watchlist = usePrefs((s) => s.watchlist);
+  const watch = new Set(watchlist.map((s) => s.toUpperCase()));
+  return (s: string) => watch.has(s.toUpperCase());
+}
 
 function firstSentence(text?: string): string | null {
   if (!text) return null;
@@ -24,7 +30,10 @@ function TopItem({
   onExplain: (i: NewsItem) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const symbols = [...item.tickers, ...(item.pairs ?? [])];
+  const inWatchlist = useWatchlistCheck();
+  const symbols = [...item.tickers, ...(item.pairs ?? [])].sort(
+    (a, b) => Number(inWatchlist(b)) - Number(inWatchlist(a)),
+  );
 
   return (
     <li className="border border-ink-800 bg-ink-900/60">
@@ -41,7 +50,7 @@ function TopItem({
           <div className="flex items-baseline gap-2">
             <ImpactDot impact={item.impact} />
             <span className="tnum font-mono text-2xs text-text-low">
-              {relativeTime(item.timestamp)}
+              {relativeTime(item.timestamp)} · {dateTimeStamp(item.timestamp)}
             </span>
             <SourceTag source={item.source} sourceType={item.sourceType} />
           </div>
@@ -56,6 +65,9 @@ function TopItem({
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             {item.marketReaction?.map((r) => (
               <ReactionChip key={r.instrument} reaction={r} />
+            ))}
+            {symbols.slice(0, 4).map((s) => (
+              <TickerChip key={s} symbol={s} inWatchlist={inWatchlist(s)} />
             ))}
           </div>
         </div>
@@ -75,7 +87,7 @@ function TopItem({
       {expanded && (
         <div className="border-t border-ink-800 px-4 pb-3 pt-2 sm:px-5">
           <div className="tnum font-mono text-2xs text-text-low">
-            {shortTime(item.timestamp)} · {item.eventType}
+            {dateTimeStamp(item.timestamp)} · {item.eventType}
           </div>
           {item.body && (
             <p className="mt-1.5 text-[13px] leading-relaxed text-text-mid">
@@ -84,9 +96,20 @@ function TopItem({
           )}
           <div className="mt-2 flex flex-wrap gap-1.5">
             {symbols.map((s) => (
-              <TickerChip key={s} symbol={s} />
+              <TickerChip key={s} symbol={s} inWatchlist={inWatchlist(s)} />
             ))}
           </div>
+          {item.url && (
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="mt-2 inline-block font-mono text-2xs text-phos/80 underline decoration-phos/30 hover:text-phos"
+            >
+              View source →
+            </a>
+          )}
         </div>
       )}
     </li>
@@ -112,6 +135,9 @@ function CompactItem({
         <ImpactDot impact={item.impact} />
         <span className="tnum w-9 shrink-0 font-mono text-2xs text-text-low">
           {relativeTime(item.timestamp)}
+        </span>
+        <span className="tnum w-[92px] shrink-0 font-mono text-2xs text-text-low">
+          {dateTimeStamp(item.timestamp)}
         </span>
         <span className="min-w-0 flex-1 truncate text-[13px] text-text-mid">
           {item.headline}
@@ -139,6 +165,17 @@ function CompactItem({
               <ReactionChip key={r.instrument} reaction={r} />
             ))}
           </div>
+          {item.url && (
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="mt-2 inline-block font-mono text-2xs text-phos/80 underline decoration-phos/30 hover:text-phos"
+            >
+              View source →
+            </a>
+          )}
         </div>
       )}
     </li>

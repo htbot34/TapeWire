@@ -51,4 +51,14 @@ export interface UserFilters {
   eventTypes?: EventType[];
   /** Restrict to specific symbols (subset of watchlist chips clicked in the UI). */
   symbols?: string[];
+  /** Restrict to specific source names (e.g. "Reuters", or a custom source's stored name). */
+  sourceNames?: string[];
+  /** Restrict to whole source types (e.g. all social accounts). */
+  sourceTypes?: SourceType[];
+  /**
+   * User-added custom sources (enabled ones only). The mock provider
+   * synthesizes a labeled sample item per source so added feeds visibly land
+   * on the tape; a live provider would ingest them for real.
+   */
+  customSources?: string[];
 }

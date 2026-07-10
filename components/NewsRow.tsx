@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { NewsItem } from "@/lib/news/types";
-import { relativeTime, shortTime } from "@/lib/time";
+import { usePrefs } from "@/lib/store";
+import { dateTimeStamp, relativeTime } from "@/lib/time";
 import { ImpactDot, ReactionChip, SourceTag, TickerChip } from "./atoms";
 
 /**
@@ -18,8 +19,14 @@ export default function NewsRow({
   onExplain: (item: NewsItem) => void;
   now: number;
 }) {
+  const watchlist = usePrefs((s) => s.watchlist);
   const [expanded, setExpanded] = useState(false);
-  const symbols = [...item.tickers, ...(item.pairs ?? [])];
+  const watch = new Set(watchlist.map((s) => s.toUpperCase()));
+  const inWatchlist = (s: string) => watch.has(s.toUpperCase());
+  // Watchlist symbols sort first so "this touches MY symbols" survives the +N cut.
+  const symbols = [...item.tickers, ...(item.pairs ?? [])].sort(
+    (a, b) => Number(inWatchlist(b)) - Number(inWatchlist(a)),
+  );
 
   return (
     <li className="border-b border-ink-800/70">
@@ -34,6 +41,9 @@ export default function NewsRow({
         </span>
         <span className="tnum w-9 shrink-0 font-mono text-2xs text-text-low">
           {relativeTime(item.timestamp, now)}
+        </span>
+        <span className="tnum w-[92px] shrink-0 font-mono text-2xs text-text-low">
+          {dateTimeStamp(item.timestamp)}
         </span>
         <span className="hidden w-20 overflow-hidden sm:inline-block">
           <SourceTag source={item.source} sourceType={item.sourceType} />
@@ -51,7 +61,7 @@ export default function NewsRow({
         </span>
         <span className="hidden shrink-0 items-center gap-1 md:flex">
           {symbols.slice(0, 3).map((s) => (
-            <TickerChip key={s} symbol={s} />
+            <TickerChip key={s} symbol={s} inWatchlist={inWatchlist(s)} />
           ))}
           {symbols.length > 3 && (
             <span className="font-mono text-2xs text-text-low">
@@ -75,7 +85,7 @@ export default function NewsRow({
       {expanded && (
         <div className="border-l-2 border-ink-700 bg-ink-900/60 px-4 pb-3 pt-2 sm:ml-4 sm:px-5">
           <div className="tnum font-mono text-2xs text-text-low">
-            {shortTime(item.timestamp)} · {item.source} · {item.eventType}
+            {dateTimeStamp(item.timestamp)} · {item.source} · {item.eventType}
           </div>
           {item.body && (
             <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-text-mid">
@@ -87,18 +97,22 @@ export default function NewsRow({
               <ReactionChip key={r.instrument} reaction={r} />
             ))}
             {symbols.map((s) => (
-              <TickerChip key={s} symbol={s} />
+              <TickerChip key={s} symbol={s} inWatchlist={inWatchlist(s)} />
             ))}
           </div>
           <div className="mt-2 flex items-center gap-3">
-            <a
-              href={item.url ?? "#"}
-              onClick={(e) => e.preventDefault()}
-              className="font-mono text-2xs text-phos/80 underline decoration-phos/30 hover:text-phos"
-              title="Source link (stub in prototype)"
-            >
-              source ↗
-            </a>
+            {item.url && (
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="font-mono text-2xs text-phos/80 underline decoration-phos/30 hover:text-phos"
+                title={item.url}
+              >
+                View source →
+              </a>
+            )}
             <button
               onClick={() => onExplain(item)}
               className="font-mono text-2xs text-text-low hover:text-phos"

@@ -1,12 +1,15 @@
 "use client";
 
 import type { EventType, Impact } from "@/lib/news/types";
+import type { NewsSource } from "@/lib/store";
 
 export interface FeedFilterState {
   watchlistOnly: boolean;
   impacts: Impact[];
   eventType: EventType | "all";
   symbols: string[];
+  /** NewsSource id from prefs, or "all". Custom sources appear here too. */
+  sourceId: string;
 }
 
 const EVENT_TYPES: { value: EventType | "all"; label: string }[] = [
@@ -30,10 +33,12 @@ const IMPACTS: { value: Impact; label: string; on: string }[] = [
 export default function FilterBar({
   filters,
   watchlist,
+  sources,
   onChange,
 }: {
   filters: FeedFilterState;
   watchlist: string[];
+  sources: NewsSource[];
   onChange: (next: FeedFilterState) => void;
 }) {
   const toggleImpact = (i: Impact) => {
@@ -111,6 +116,23 @@ export default function FilterBar({
               {e.label}
             </option>
           ))}
+        </select>
+
+        {/* Source — enabled sources from prefs, user-added customs included */}
+        <select
+          value={filters.sourceId}
+          onChange={(e) => onChange({ ...filters, sourceId: e.target.value })}
+          className="max-w-[150px] rounded-sm border border-ink-700 bg-ink-950 px-1.5 py-1 font-mono text-2xs text-text-mid focus:border-phos focus:outline-none"
+          aria-label="Filter by source"
+        >
+          <option value="all">All sources</option>
+          {sources
+            .filter((s) => s.enabled)
+            .map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.kind === "custom" ? `${s.name} · custom` : s.name}
+              </option>
+            ))}
         </select>
 
         {/* Watchlist symbol chips */}

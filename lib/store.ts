@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AssetClass } from "@/lib/news/types";
+import type { AssetClass, SourceType } from "@/lib/news/types";
 
 export interface NewsSource {
   id: string;
@@ -22,6 +22,31 @@ export const DEFAULT_SOURCES: NewsSource[] = [
 
 export const DEFAULT_WATCHLIST = ["SPY", "QQQ", "NVDA", "TSLA", "AAPL"];
 export const DEFAULT_ASSET_CLASSES: AssetClass[] = ["equities", "options"];
+
+/**
+ * Translates a prefs source into the UserFilters source criteria the provider
+ * understands. Preloaded groups map to whole source types where the group is
+ * broader than one outlet; custom sources match by their stored name.
+ */
+export function sourceFilterFor(source: NewsSource): {
+  sourceNames?: string[];
+  sourceTypes?: SourceType[];
+} {
+  switch (source.id) {
+    case "reuters":
+      return { sourceNames: ["Reuters"] };
+    case "cnbc":
+      return { sourceNames: ["CNBC"] };
+    case "bloomberg":
+      return { sourceNames: ["Bloomberg"] };
+    case "forexfactory":
+      return { sourceTypes: ["econ-calendar"] };
+    case "twitter":
+      return { sourceTypes: ["social"] };
+    default:
+      return { sourceNames: [source.name] };
+  }
+}
 
 interface PrefsState {
   onboarded: boolean;

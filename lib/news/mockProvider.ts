@@ -1,6 +1,6 @@
 import type { NewsProvider } from "./provider";
 import type { Impact, NewsItem, UserFilters } from "./types";
-import { buildBreakingItem, mockNewsItems } from "./mockData";
+import { buildBreakingItem, buildCustomSourceItem, mockNewsItems } from "./mockData";
 
 const IMPACT_WEIGHT: Record<Impact, number> = { high: 100, medium: 40, low: 10 };
 
@@ -35,6 +35,13 @@ function applyFilters(items: NewsItem[], filters: UserFilters): NewsItem[] {
         item.pairs?.some((p) => wanted.has(p.toUpperCase()));
       if (!hit) return false;
     }
+    if (filters.sourceNames?.length || filters.sourceTypes?.length) {
+      const nameHit = filters.sourceNames?.some(
+        (n) => n.toLowerCase() === item.source.toLowerCase(),
+      );
+      const typeHit = filters.sourceTypes?.includes(item.sourceType);
+      if (!nameHit && !typeHit) return false;
+    }
     return true;
   });
 }
@@ -45,7 +52,15 @@ export class MockNewsProvider implements NewsProvider {
   private breakingIndex = 0;
 
   async getFeed(filters: UserFilters): Promise<NewsItem[]> {
-    const filtered = applyFilters(this.items, filters);
+    // One labeled sample item per enabled custom source, so user-added feeds
+    // visibly land on the tape (real ingestion is future work). A source the
+    // user explicitly added is relevant by definition — it bypasses the
+    // watchlist gate but still honors the narrowing filters.
+    const customItems = applyFilters(
+      (filters.customSources ?? []).map(buildCustomSourceItem),
+      { ...filters, watchlistOnly: false },
+    );
+    const filtered = [...applyFilters(this.items, filters), ...customItems];
     return filtered.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
