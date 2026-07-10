@@ -39,7 +39,7 @@ const config: Config = {
         pos: "#4cc38a",
         neg: "#e5484d",
         breaking: {
-          bg: "#2a0d10",
+          bg: "#47121a",
           edge: "#e5484d",
         },
       },

@@ -54,6 +54,8 @@ interface PrefsState {
   watchlist: string[];
   sources: NewsSource[];
   proInterestEmail: string | null;
+  /** Audio tick on breaking alerts. Off by default — traders opt in. */
+  breakingAudio: boolean;
   _hasHydrated: boolean;
 
   setOnboarded: (v: boolean) => void;
@@ -64,6 +66,7 @@ interface PrefsState {
   addCustomSource: (input: string) => void;
   removeSource: (id: string) => void;
   setProInterestEmail: (email: string) => void;
+  toggleBreakingAudio: () => void;
   applyDefaults: () => void;
   resetAll: () => void;
   setHasHydrated: (v: boolean) => void;
@@ -77,6 +80,7 @@ export const usePrefs = create<PrefsState>()(
       watchlist: [],
       sources: DEFAULT_SOURCES,
       proInterestEmail: null,
+      breakingAudio: false,
       _hasHydrated: false,
 
       setOnboarded: (v) => set({ onboarded: v }),
@@ -111,6 +115,7 @@ export const usePrefs = create<PrefsState>()(
       removeSource: (id) =>
         set((s) => ({ sources: s.sources.filter((src) => src.id !== id) })),
       setProInterestEmail: (email) => set({ proInterestEmail: email }),
+      toggleBreakingAudio: () => set((s) => ({ breakingAudio: !s.breakingAudio })),
       applyDefaults: () =>
         set({
           assetClasses: DEFAULT_ASSET_CLASSES,
@@ -125,6 +130,7 @@ export const usePrefs = create<PrefsState>()(
           watchlist: [],
           sources: DEFAULT_SOURCES,
           proInterestEmail: null,
+          breakingAudio: false,
         }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
@@ -139,6 +145,7 @@ export const usePrefs = create<PrefsState>()(
         watchlist: s.watchlist,
         sources: s.sources,
         proInterestEmail: s.proInterestEmail,
+        breakingAudio: s.breakingAudio,
       }),
     },
   ),
