@@ -51,6 +51,7 @@ export default function Header() {
           <NavTab href="/" label="Feed" />
           <NavTab href="/briefing" label="Briefing" />
           <NavTab href="/journal" label="Journal" />
+          <NavTab href="/calendar" label="Calendar" />
         </nav>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">

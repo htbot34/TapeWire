@@ -199,6 +199,9 @@ export default function BriefingView() {
   }, [watchlist, assetClasses]);
 
   const highCount = items?.filter((i) => i.impact === "high").length ?? 0;
+  const quietNight = items !== null && items.length > 0 && highCount === 0;
+  // No cap: everything overnight shows, ranked high → low. Top 4 get the
+  // prominent treatment, the rest list compact below.
   const top = items?.slice(0, 4) ?? [];
   const rest = items?.slice(4) ?? [];
 
@@ -213,9 +216,24 @@ export default function BriefingView() {
             While you were out
           </h1>
           <p className="tnum mt-0.5 font-mono text-xs text-text-mid">
-            {briefingDate()} · {highCount} high-impact event
-            {highCount === 1 ? "" : "s"} overnight · ranked for your watchlist
+            {briefingDate()} ·{" "}
+            {quietNight ? (
+              <span className="font-semibold text-impact-med">
+                Quiet overnight — no high-impact events
+              </span>
+            ) : (
+              <>
+                {highCount} high-impact event{highCount === 1 ? "" : "s"} overnight
+              </>
+            )}{" "}
+            · ranked for your watchlist
           </p>
+          {quietNight && (
+            <p className="mt-1 text-xs text-text-mid">
+              The items below are the most notable of a slow session — amber and
+              gray dots only, nothing at red-folder level.
+            </p>
+          )}
         </header>
 
         {items === null ? (
