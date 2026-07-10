@@ -5,10 +5,12 @@ import type { NewsItem } from "@/lib/news/types";
 import { usePrefs } from "@/lib/store";
 import { dateTimeStamp, relativeTime } from "@/lib/time";
 import { ImpactDot, ReactionChip, SourceTag, TickerChip } from "./atoms";
+import JournalButton from "./JournalButton";
 
 /**
  * One dense, scannable tape row. Tap anywhere to expand inline (accordion,
- * no navigation); the "?" affordance opens the AI explainer.
+ * no navigation); the "?" affordance opens the AI explainer; the → saves
+ * the item to the journal.
  */
 export default function NewsRow({
   item,
@@ -69,6 +71,7 @@ export default function NewsRow({
             </span>
           )}
         </span>
+        <JournalButton item={item} />
         <button
           onClick={(e) => {
             e.stopPropagation();

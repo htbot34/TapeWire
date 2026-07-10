@@ -7,6 +7,7 @@ import { usePrefs } from "@/lib/store";
 import { briefingDate, dateTimeStamp, relativeTime } from "@/lib/time";
 import { ImpactDot, ReactionChip, SourceTag, TickerChip } from "./atoms";
 import ExplainerPanel from "./ExplainerPanel";
+import JournalButton from "./JournalButton";
 
 function useWatchlistCheck() {
   const watchlist = usePrefs((s) => s.watchlist);
@@ -71,17 +72,20 @@ function TopItem({
             ))}
           </div>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onExplain(item);
-          }}
-          className="shrink-0 rounded-sm border border-ink-700 px-1.5 font-mono text-2xs text-text-low hover:border-phos hover:text-phos"
-          title="What does this mean? (AI)"
-          aria-label={`Explain: ${item.headline}`}
-        >
-          ?
-        </button>
+        <span className="flex shrink-0 items-center gap-1.5">
+          <JournalButton item={item} />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onExplain(item);
+            }}
+            className="shrink-0 rounded-sm border border-ink-700 px-1.5 font-mono text-2xs text-text-low hover:border-phos hover:text-phos"
+            title="What does this mean? (AI)"
+            aria-label={`Explain: ${item.headline}`}
+          >
+            ?
+          </button>
+        </span>
       </div>
 
       {expanded && (
@@ -142,6 +146,7 @@ function CompactItem({
         <span className="min-w-0 flex-1 truncate text-[13px] text-text-mid">
           {item.headline}
         </span>
+        <JournalButton item={item} />
         <button
           onClick={(e) => {
             e.stopPropagation();

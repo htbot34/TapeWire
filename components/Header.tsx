@@ -50,6 +50,7 @@ export default function Header() {
         <nav className="flex items-center gap-3 sm:gap-4">
           <NavTab href="/" label="Feed" />
           <NavTab href="/briefing" label="Briefing" />
+          <NavTab href="/journal" label="Journal" />
         </nav>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
