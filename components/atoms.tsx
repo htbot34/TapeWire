@@ -1,4 +1,5 @@
 import type { Impact, MarketReaction } from "@/lib/news/types";
+import { formatMove } from "@/lib/news/types";
 
 export function ImpactDot({ impact }: { impact: Impact }) {
   const cls =
@@ -52,7 +53,7 @@ export function ReactionChip({ reaction }: { reaction: MarketReaction }) {
       }`}
     >
       <span className="text-text-mid">{reaction.instrument}</span>
-      {reaction.move}
+      {formatMove(reaction)}
     </span>
   );
 }

@@ -1,4 +1,5 @@
 import type { NewsItem } from "@/lib/news/types";
+import { formatReaction } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 
 // Canned explainer text used wherever the live Anthropic call is unavailable:
@@ -13,9 +14,7 @@ export function mockExplanation(
 ): string {
   const symbols = [...item.tickers, ...(item.pairs ?? [])];
   const watchHits = symbols.filter((s) => watchlist.includes(s));
-  const reaction = item.marketReaction
-    ?.map((r) => `${r.instrument} ${r.move}`)
-    .join(", ");
+  const reaction = item.marketReaction?.map(formatReaction).join(", ");
 
   const eventBlurb: Record<string, string> = {
     "econ-release":
@@ -40,7 +39,7 @@ export function mockExplanation(
   const lastLine = last
     ? `Fact: the last recorded ${history!.name} was ${last.date}${
         last.actual ? ` · ${last.actual}${last.consensus ? ` vs ${last.consensus} exp` : ""}` : ""
-      } · ${last.reactions.map((r) => `${r.instrument} ${r.move}`).join(", ")} — see the Historical reactions table.`
+      } · ${last.reactions.map(formatReaction).join(", ")} — see the Historical reactions table.`
     : null;
 
   // Same labeled-section format the live prompt requires, so the panel's
@@ -85,8 +84,8 @@ export function mockFollowUpReply(
 ): string {
   if (ADVICE_PATTERN.test(question)) {
     const redirect = history?.occurrences?.length
-      ? `What the record shows: the last ${Math.min(history.occurrences.length, 3)} occurrences of ${history.name} are in the Historical reactions table above (most recent: ${history.occurrences[0].date}, ${history.occurrences[0].reactions.map((r) => `${r.instrument} ${r.move}`).join(", ")}). How you position around that is your call.`
-      : `The recorded market reaction on this item${item.marketReaction?.length ? ` (${item.marketReaction.map((r) => `${r.instrument} ${r.move}`).join(", ")})` : ""} is the factual reference point. How you position around it is your call.`;
+      ? `What the record shows: the last ${Math.min(history.occurrences.length, 3)} occurrences of ${history.name} are in the Historical reactions table above (most recent: ${history.occurrences[0].date}, ${history.occurrences[0].reactions.map(formatReaction).join(", ")}). How you position around that is your call.`
+      : `The recorded market reaction on this item${item.marketReaction?.length ? ` (${item.marketReaction.map(formatReaction).join(", ")})` : ""} is the factual reference point. How you position around it is your call.`;
     return [
       `TapeWire provides context, not advice — no buy/sell/hold calls and no predictions.`,
       ``,

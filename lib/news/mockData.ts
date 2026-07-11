@@ -26,9 +26,9 @@ const seeds: Seed[] = [
     eventType: "fed-speak",
     body: "Federal Reserve Governor Christopher Waller said the central bank can afford to be patient on further rate cuts, citing resilient labor data and inflation that remains above target. He added that the bar for a move at the next meeting is 'higher than markets appear to be pricing.'",
     marketReaction: [
-      { instrument: "ES", move: "-0.4%" },
-      { instrument: "10Y", move: "+5bp" },
-      { instrument: "DXY", move: "+0.3%" },
+      { instrument: "ES", move: "-0.4%", interval: "15m" },
+      { instrument: "10Y", move: "+5bp", interval: "15m" },
+      { instrument: "DXY", move: "+0.3%", interval: "15m" },
     ],
   },
   {
@@ -42,8 +42,8 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "Nvidia shares extended declines in afternoon trading, dragging the Philadelphia Semiconductor Index lower. Traders cited profit-taking after a strong run and caution ahead of export-license headlines out of Washington.",
     marketReaction: [
-      { instrument: "NVDA", move: "-3.2%" },
-      { instrument: "SMH", move: "-2.1%" },
+      { instrument: "NVDA", move: "-3.2%", interval: "on day" },
+      { instrument: "SMH", move: "-2.1%", interval: "on day" },
     ],
   },
   {
@@ -68,7 +68,7 @@ const seeds: Seed[] = [
     eventType: "tweet",
     body: "Chinese market regulator SAMR posted a filing showing Tesla will recall approximately 1.1 million vehicles in China to fix a steering-assist software issue via OTA update. Tesla shares dropped on the headline before paring losses as traders noted the fix is software-only.",
     marketReaction: [
-      { instrument: "TSLA", move: "-2.6%" },
+      { instrument: "TSLA", move: "-2.6%", interval: "10m" },
     ],
   },
   {
@@ -82,7 +82,7 @@ const seeds: Seed[] = [
     eventType: "econ-release",
     body: "US crude stockpiles fell 2.8 million barrels last week, a larger draw than the 1.2 million consensus. Gasoline inventories were roughly flat. WTI added to gains after the print.",
     marketReaction: [
-      { instrument: "CL", move: "+1.1%" },
+      { instrument: "CL", move: "+1.1%", interval: "30m" },
     ],
   },
   {
@@ -107,7 +107,7 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "Meta introduced a new ads ranking architecture it says lifts conversions roughly 4% in early tests across Reels placements. Analysts flagged the update as supportive of second-half revenue estimates.",
     marketReaction: [
-      { instrument: "META", move: "+1.4%" },
+      { instrument: "META", move: "+1.4%", interval: "30m" },
     ],
   },
   {
@@ -144,7 +144,7 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "Speaking at an industry conference, AMD's CFO said MI-series accelerator shipments are tracking ahead of internal plan for the quarter and reiterated the full-year data center outlook.",
     marketReaction: [
-      { instrument: "AMD", move: "+2.3%" },
+      { instrument: "AMD", move: "+2.3%", interval: "30m" },
     ],
   },
   {
@@ -191,7 +191,7 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "A Microsoft executive said Azure AI capacity constraints should be largely resolved by the fiscal fourth quarter as new data centers come online, easing a concern analysts have flagged for two quarters.",
     marketReaction: [
-      { instrument: "MSFT", move: "+0.9%" },
+      { instrument: "MSFT", move: "+0.9%", interval: "30m" },
     ],
   },
   {
@@ -217,7 +217,7 @@ const seeds: Seed[] = [
     eventType: "fed-speak",
     body: "ECB President Christine Lagarde reiterated that euro-area disinflation remains on track and the Governing Council will decide meeting by meeting. She declined to commit to a timeline for further cuts.",
     marketReaction: [
-      { instrument: "EUR/USD", move: "-0.2%" },
+      { instrument: "EUR/USD", move: "-0.2%", interval: "15m" },
     ],
   },
   {
@@ -242,7 +242,7 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "Netflix raised prices on its standard and premium tiers in the US and UK, its first increase in over a year. The ad-supported tier is unchanged. Street models imply roughly 3% incremental revenue on the move.",
     marketReaction: [
-      { instrument: "NFLX", move: "+2.8%" },
+      { instrument: "NFLX", move: "+2.8%", interval: "30m" },
     ],
   },
   {
@@ -256,8 +256,8 @@ const seeds: Seed[] = [
     eventType: "econ-release",
     body: "The $42 billion 10-year note auction tailed by 1.2 basis points with softer-than-average demand metrics. Dealers were left with an above-average share, pressuring the long end after the results.",
     marketReaction: [
-      { instrument: "10Y", move: "+3bp" },
-      { instrument: "ZN", move: "-0.2%" },
+      { instrument: "10Y", move: "+3bp", interval: "15m" },
+      { instrument: "ZN", move: "-0.2%", interval: "15m" },
     ],
   },
   {
@@ -282,7 +282,7 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "The judge overseeing the DOJ search-remedies case scheduled next month's hearing and signaled the court favors behavioral remedies over structural separation, according to courtroom reports.",
     marketReaction: [
-      { instrument: "GOOGL", move: "+1.1%" },
+      { instrument: "GOOGL", move: "+1.1%", interval: "30m" },
     ],
   },
   {
@@ -310,10 +310,10 @@ const seeds: Seed[] = [
     eventType: "econ-release",
     body: "Headline CPI rose 0.2% on the month against 0.3% expected, bringing the annual rate to 2.4%. Core came in at 0.2% m/m, also a tenth below consensus. Shelter inflation decelerated to its slowest pace since 2021. Rate-cut odds for the next FOMC meeting jumped on the release.",
     marketReaction: [
-      { instrument: "ES", move: "+0.9%" },
-      { instrument: "NQ", move: "+1.3%" },
-      { instrument: "10Y", move: "-7bp" },
-      { instrument: "DXY", move: "-0.5%" },
+      { instrument: "ES", move: "+0.9%", interval: "5m" },
+      { instrument: "NQ", move: "+1.3%", interval: "5m" },
+      { instrument: "10Y", move: "-7bp", interval: "30m" },
+      { instrument: "DXY", move: "-0.5%", interval: "30m" },
     ],
   },
   {
@@ -327,7 +327,7 @@ const seeds: Seed[] = [
     eventType: "other",
     body: "Spot gold jumped to a record above $3,150/oz as Treasury yields and the dollar fell on the cooler-than-expected inflation report.",
     marketReaction: [
-      { instrument: "GC", move: "+1.2%" },
+      { instrument: "GC", move: "+1.2%", interval: "30m" },
     ],
   },
   {
@@ -341,7 +341,7 @@ const seeds: Seed[] = [
     eventType: "econ-release",
     body: "First-time unemployment claims came in at 219,000, below the 225,000 consensus. Continuing claims edged up to 1.87 million, in line with expectations.",
     marketReaction: [
-      { instrument: "ES", move: "+0.1%" },
+      { instrument: "ES", move: "+0.1%", interval: "5m" },
     ],
   },
   {
@@ -355,8 +355,8 @@ const seeds: Seed[] = [
     eventType: "earnings",
     body: "JPMorgan reported second-quarter EPS of $4.87 versus $4.61 expected, on revenue of $45.9 billion. The bank raised full-year net interest income guidance by roughly $1 billion and flagged 'healthy but normalizing' consumer credit. Trading revenue rose 12% year over year.",
     marketReaction: [
-      { instrument: "JPM", move: "+3.1%" },
-      { instrument: "XLF", move: "+1.0%" },
+      { instrument: "JPM", move: "+3.1%", interval: "since release" },
+      { instrument: "XLF", move: "+1.0%", interval: "since release" },
     ],
   },
   {
@@ -382,7 +382,7 @@ const seeds: Seed[] = [
     eventType: "econ-release",
     body: "UK inflation printed 3.1% year over year against 2.9% expected, led by services prices. Traders pared Bank of England cut expectations, lifting sterling across the board.",
     marketReaction: [
-      { instrument: "GBP/USD", move: "+0.6%" },
+      { instrument: "GBP/USD", move: "+0.6%", interval: "5m" },
     ],
   },
   {
@@ -396,7 +396,7 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "Broadcom is in advanced negotiations to design custom AI accelerators for a fourth major cloud customer, according to a report. A deal could be announced within weeks.",
     marketReaction: [
-      { instrument: "AVGO", move: "+2.4%" },
+      { instrument: "AVGO", move: "+2.4%", interval: "30m" },
     ],
   },
   {
@@ -410,7 +410,7 @@ const seeds: Seed[] = [
     eventType: "analyst",
     body: "Morgan Stanley downgraded Apple to equal-weight, arguing the next iPhone upgrade cycle is more back-half loaded than consensus assumes and that Services growth is decelerating at the margin.",
     marketReaction: [
-      { instrument: "AAPL", move: "-1.8%" },
+      { instrument: "AAPL", move: "-1.8%", interval: "30m" },
     ],
   },
   {
@@ -438,8 +438,8 @@ const seeds: Seed[] = [
     eventType: "earnings",
     body: "TSMC reported quarterly revenue up 38% year over year, ahead of its guidance midpoint, on sustained AI accelerator demand. The company said advanced-node capacity remains 'fully committed' through year-end. US-listed chip names rose in overnight trading on the print.",
     marketReaction: [
-      { instrument: "TSM", move: "+3.4%" },
-      { instrument: "NQ", move: "+0.4%" },
+      { instrument: "TSM", move: "+3.4%", interval: "overnight" },
+      { instrument: "NQ", move: "+0.4%", interval: "overnight" },
     ],
   },
   {
@@ -454,8 +454,8 @@ const seeds: Seed[] = [
     eventType: "fed-speak",
     body: "Bank of Japan Governor Kazuo Ueda told parliament the central bank will adjust the degree of monetary easing if its inflation outlook is realized, language traders read as keeping a near-term hike live. The yen firmed across the board on the remarks.",
     marketReaction: [
-      { instrument: "USD/JPY", move: "-0.7%" },
-      { instrument: "NKY", move: "-1.1%" },
+      { instrument: "USD/JPY", move: "-0.7%", interval: "30m" },
+      { instrument: "NKY", move: "-1.1%", interval: "on day" },
     ],
   },
   {
@@ -481,7 +481,7 @@ const seeds: Seed[] = [
     eventType: "econ-release",
     body: "Chinese exports grew 7.6% year over year in June, well above the 5.0% consensus, as shippers front-loaded orders ahead of tariff deadlines. Imports rose 2.1%. The Aussie dollar, a China proxy, ticked higher on the data.",
     marketReaction: [
-      { instrument: "AUD/USD", move: "+0.3%" },
+      { instrument: "AUD/USD", move: "+0.3%", interval: "15m" },
     ],
   },
   {
@@ -495,7 +495,7 @@ const seeds: Seed[] = [
     eventType: "geopolitical",
     body: "An OPEC+ ministerial panel recommended keeping current production policy unchanged at its overnight meeting, delegates said, deferring the decision on unwinding voluntary cuts to the next full meeting.",
     marketReaction: [
-      { instrument: "CL", move: "+0.5%" },
+      { instrument: "CL", move: "+0.5%", interval: "30m" },
     ],
   },
   {
@@ -521,8 +521,8 @@ const seeds: Seed[] = [
     eventType: "econ-release",
     body: "Minutes from the last FOMC meeting showed 'several' participants preferred to see additional months of inflation progress before easing further, while 'a couple' argued the labor market already justified a cut. Staff projections flagged tariff pass-through as an upside inflation risk into Q4.",
     marketReaction: [
-      { instrument: "ES", move: "-0.3%" },
-      { instrument: "2Y", move: "+4bp" },
+      { instrument: "ES", move: "-0.3%", interval: "30m" },
+      { instrument: "2Y", move: "+4bp", interval: "30m" },
     ],
   },
   {
@@ -536,7 +536,7 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "Amazon Web Services signed an $8 billion multi-year agreement to provide cloud and AI services to a global pharmaceutical group, one of AWS's largest healthcare deals to date.",
     marketReaction: [
-      { instrument: "AMZN", move: "+1.2%" },
+      { instrument: "AMZN", move: "+1.2%", interval: "30m" },
     ],
   },
   {
@@ -562,8 +562,8 @@ const seeds: Seed[] = [
     eventType: "geopolitical",
     body: "A maritime security agency reported strikes near the Yemeni port of Hodeidah overnight, prompting several carriers to reroute vessels and lifting war-risk insurance premiums in the Red Sea corridor. Crude added a geopolitical premium on the headlines.",
     marketReaction: [
-      { instrument: "CL", move: "+1.6%" },
-      { instrument: "GC", move: "+0.4%" },
+      { instrument: "CL", move: "+1.6%", interval: "30m" },
+      { instrument: "GC", move: "+0.4%", interval: "30m" },
     ],
   },
   {
@@ -577,7 +577,7 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "Coinbase agreed to acquire an international crypto-derivatives platform for $2.9 billion in cash and stock, its largest deal to date, expanding its footprint in perpetual futures outside the US.",
     marketReaction: [
-      { instrument: "COIN", move: "+4.2%" },
+      { instrument: "COIN", move: "+4.2%", interval: "overnight" },
     ],
   },
   {
@@ -592,7 +592,7 @@ const seeds: Seed[] = [
     eventType: "econ-release",
     body: "The Reserve Bank of Australia left its cash rate unchanged at 3.60% and said any further easing would be gradual and data-dependent. The Aussie firmed modestly as some traders had positioned for a cut.",
     marketReaction: [
-      { instrument: "AUD/USD", move: "+0.4%" },
+      { instrument: "AUD/USD", move: "+0.4%", interval: "15m" },
     ],
   },
   {
@@ -606,7 +606,7 @@ const seeds: Seed[] = [
     eventType: "tweet",
     body: "Elon Musk posted overnight that Tesla's Optimus humanoid robot line is targeting a 10,000 units/month run-rate by the end of next year, a faster ramp than previously communicated on earnings calls. Shares ticked up in overnight trading on the post.",
     marketReaction: [
-      { instrument: "TSLA", move: "+1.5%" },
+      { instrument: "TSLA", move: "+1.5%", interval: "overnight" },
     ],
   },
   {
@@ -620,7 +620,7 @@ const seeds: Seed[] = [
     eventType: "earnings",
     body: "Samsung Electronics guided second-quarter operating profit up 56% year over year, ahead of estimates, on recovering memory prices and HBM shipments. Micron traded higher in sympathy overnight.",
     marketReaction: [
-      { instrument: "MU", move: "+2.7%" },
+      { instrument: "MU", move: "+2.7%", interval: "overnight" },
     ],
   },
   {
@@ -634,8 +634,8 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "Oracle disclosed remaining performance obligations above $180 billion after signing two gigawatt-scale AI compute contracts, according to a filing published after yesterday's close. Shares jumped in extended trading and held the gains overnight.",
     marketReaction: [
-      { instrument: "ORCL", move: "+6.1%" },
-      { instrument: "NQ", move: "+0.3%" },
+      { instrument: "ORCL", move: "+6.1%", interval: "overnight" },
+      { instrument: "NQ", move: "+0.3%", interval: "overnight" },
     ],
   },
   {
@@ -650,7 +650,7 @@ const seeds: Seed[] = [
     eventType: "econ-release",
     body: "New Zealand inflation printed 2.9% year over year, above the RBNZ's 2% target midpoint, trimming expectations for further near-term easing.",
     marketReaction: [
-      { instrument: "NZD/USD", move: "+0.5%" },
+      { instrument: "NZD/USD", move: "+0.5%", interval: "15m" },
     ],
   },
   {
@@ -675,7 +675,7 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "The SEC has circulated a draft framework among commissioners that would allow limited pilots of on-chain settlement for US equities, people familiar with the matter said. Crypto-adjacent brokers rose overnight on the report.",
     marketReaction: [
-      { instrument: "HOOD", move: "+3.3%" },
+      { instrument: "HOOD", move: "+3.3%", interval: "overnight" },
     ],
   },
   {
@@ -701,8 +701,8 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "Eli Lilly said its oral GLP-1 candidate met the primary endpoint in a Phase 3 obesity trial with average weight loss of 12.6% at 68 weeks and a discontinuation rate in line with injectables. The company plans regulatory submission this year. Novo Nordisk ADRs fell in European trading.",
     marketReaction: [
-      { instrument: "LLY", move: "+5.4%" },
-      { instrument: "NVO", move: "-4.0%" },
+      { instrument: "LLY", move: "+5.4%", interval: "30m" },
+      { instrument: "NVO", move: "-4.0%", interval: "on day" },
     ],
   },
   {
@@ -739,8 +739,8 @@ const seeds: Seed[] = [
     eventType: "company-news",
     body: "Apple is developing its first AI server chip with Broadcom for deployment in 2027, a report said, part of an effort to reduce reliance on external cloud compute for Apple Intelligence workloads.",
     marketReaction: [
-      { instrument: "AAPL", move: "+0.8%" },
-      { instrument: "AVGO", move: "+1.9%" },
+      { instrument: "AAPL", move: "+0.8%", interval: "30m" },
+      { instrument: "AVGO", move: "+1.9%", interval: "30m" },
     ],
   },
   {
@@ -831,9 +831,9 @@ export const breakingPool: BreakingSeed[] = [
     eventType: "fed-speak",
     body: "In unscheduled remarks at an event in Washington, Fed Chair Jerome Powell said 'the time has come for policy to adjust,' the strongest signal yet that a rate cut is imminent. Equity futures spiked and short-end yields fell hard on the headline.",
     marketReaction: [
-      { instrument: "ES", move: "+1.1%" },
-      { instrument: "2Y", move: "-9bp" },
-      { instrument: "DXY", move: "-0.6%" },
+      { instrument: "ES", move: "+1.1%", interval: "2m" },
+      { instrument: "2Y", move: "-9bp", interval: "2m" },
+      { instrument: "DXY", move: "-0.6%", interval: "2m" },
     ],
   },
   {
@@ -846,8 +846,8 @@ export const breakingPool: BreakingSeed[] = [
     eventType: "company-news",
     body: "Trading in Nvidia shares was halted pending news. The halt follows unconfirmed reports of a major export-license decision. Options market makers widened quotes across the chip complex.",
     marketReaction: [
-      { instrument: "NQ", move: "-0.7%" },
-      { instrument: "SMH", move: "-1.8%" },
+      { instrument: "NQ", move: "-0.7%", interval: "2m" },
+      { instrument: "SMH", move: "-1.8%", interval: "2m" },
     ],
   },
   {
@@ -861,9 +861,9 @@ export const breakingPool: BreakingSeed[] = [
     eventType: "econ-release",
     body: "Nonfarm payrolls smashed expectations at +310,000 versus +160,000 consensus, with the unemployment rate falling to 3.9%. Average hourly earnings rose 0.4% on the month. Rate-cut bets were slashed on the release; yields and the dollar spiked.",
     marketReaction: [
-      { instrument: "ES", move: "-0.8%" },
-      { instrument: "10Y", move: "+11bp" },
-      { instrument: "DXY", move: "+0.7%" },
+      { instrument: "ES", move: "-0.8%", interval: "1m" },
+      { instrument: "10Y", move: "+11bp", interval: "1m" },
+      { instrument: "DXY", move: "+0.7%", interval: "1m" },
     ],
   },
   {
@@ -876,7 +876,7 @@ export const breakingPool: BreakingSeed[] = [
     eventType: "tweet",
     body: "Elon Musk posted that Tesla plans to take its energy division public, with details promised next week. The post has not been confirmed by any company filing. Shares whipsawed as traders debated the credibility and structure of the move.",
     marketReaction: [
-      { instrument: "TSLA", move: "+5.2%" },
+      { instrument: "TSLA", move: "+5.2%", interval: "5m" },
     ],
   },
   {
@@ -890,8 +890,8 @@ export const breakingPool: BreakingSeed[] = [
     eventType: "geopolitical",
     body: "Japan's Ministry of Finance confirmed yen-buying intervention after dollar-yen breached multi-decade highs. The pair dropped nearly 300 pips in minutes. Officials declined to comment on the size of the operation.",
     marketReaction: [
-      { instrument: "USD/JPY", move: "-2.4%" },
-      { instrument: "NKY", move: "-0.9%" },
+      { instrument: "USD/JPY", move: "-2.4%", interval: "5m" },
+      { instrument: "NKY", move: "-0.9%", interval: "30m" },
     ],
   },
 ];

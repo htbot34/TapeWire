@@ -10,6 +10,21 @@ interface JournalData {
   entries: JournalEntry[];
 }
 
+/**
+ * Forward-migrates blobs persisted by earlier prototype versions: reactions
+ * saved before measurement intervals existed get interval "" (rendered as a
+ * bare move — never an invented window).
+ */
+function migrate(data: JournalData): JournalData {
+  return {
+    ...data,
+    entries: data.entries.map((e) => ({
+      ...e,
+      reactions: (e.reactions ?? []).map((r) => ({ ...r, interval: r.interval ?? "" })),
+    })),
+  };
+}
+
 const defaultFolders = (): JournalFolder[] =>
   DEFAULT_FOLDER_NAMES.map((name) => ({
     id: folderIdForName(name),
@@ -36,7 +51,7 @@ export class LocalStorageJournalProvider implements JournalProvider {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        this.data = JSON.parse(raw) as JournalData;
+        this.data = migrate(JSON.parse(raw) as JournalData);
         return this.data;
       }
     } catch {

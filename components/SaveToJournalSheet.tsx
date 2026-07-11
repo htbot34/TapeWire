@@ -32,7 +32,7 @@ export default function SaveToJournalSheet({
   const [reactions, setReactions] = useState<MarketReaction[]>(
     item.marketReaction?.length
       ? item.marketReaction.map((r) => ({ ...r }))
-      : [{ instrument: "", move: "" }],
+      : [{ instrument: "", move: "", interval: "" }],
   );
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -158,10 +158,20 @@ export default function SaveToJournalSheet({
                     className="tnum min-w-0 flex-1 border border-ink-700 bg-ink-950 px-2 py-1.5 font-mono text-xs text-text-hi placeholder:text-text-low focus:border-phos focus:outline-none"
                     aria-label={`Move ${i + 1}`}
                   />
+                  <input
+                    value={r.interval}
+                    onChange={(e) => setReaction(i, { interval: e.target.value })}
+                    placeholder="in 5m"
+                    title="Measurement window — 1m, 5m, 30m, since release…"
+                    className="tnum w-20 border border-ink-700 bg-ink-950 px-2 py-1.5 font-mono text-xs text-text-hi placeholder:text-text-low focus:border-phos focus:outline-none"
+                    aria-label={`Interval ${i + 1}`}
+                  />
                   <button
                     onClick={() =>
                       setReactions((rs) =>
-                        rs.length > 1 ? rs.filter((_, idx) => idx !== i) : [{ instrument: "", move: "" }],
+                        rs.length > 1
+                          ? rs.filter((_, idx) => idx !== i)
+                          : [{ instrument: "", move: "", interval: "" }],
                       )
                     }
                     className="shrink-0 px-1 font-mono text-xs text-text-low hover:text-impact-high"
@@ -173,7 +183,9 @@ export default function SaveToJournalSheet({
               ))}
             </div>
             <button
-              onClick={() => setReactions((rs) => [...rs, { instrument: "", move: "" }])}
+              onClick={() =>
+                setReactions((rs) => [...rs, { instrument: "", move: "", interval: "" }])
+              }
               className="mt-1.5 font-mono text-2xs text-phos/80 hover:text-phos"
             >
               + add instrument

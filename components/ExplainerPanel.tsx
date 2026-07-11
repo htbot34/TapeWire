@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { NewsItem } from "@/lib/news/types";
+import type { MarketReaction, NewsItem } from "@/lib/news/types";
+import { formatMove } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 import { historicalEventProvider } from "@/lib/history";
 import { usePrefs } from "@/lib/store";
@@ -23,12 +24,14 @@ interface ChatMessage {
   content: string;
 }
 
-function MoveText({ instrument, move }: { instrument: string; move: string }) {
-  const negative = move.trim().startsWith("-");
+function MoveText({ reaction }: { reaction: MarketReaction }) {
+  const negative = reaction.move.trim().startsWith("-");
   return (
     <span className="tnum whitespace-nowrap font-mono text-2xs">
-      <span className="text-text-low">{instrument}&nbsp;</span>
-      <span className={negative ? "text-neg" : "text-pos"}>{move}</span>
+      <span className="text-text-low">{reaction.instrument}&nbsp;</span>
+      <span className={negative ? "text-neg" : "text-pos"}>
+        {formatMove(reaction)}
+      </span>
     </span>
   );
 }
@@ -85,7 +88,7 @@ function HistoricalTable({ history }: { history: HistoricalEventContext }) {
           </span>
           <span className="ml-auto flex shrink-0 flex-wrap justify-end gap-x-2">
             {o.reactions.map((r) => (
-              <MoveText key={r.instrument} instrument={r.instrument} move={r.move} />
+              <MoveText key={r.instrument} reaction={r} />
             ))}
           </span>
         </div>
@@ -337,7 +340,7 @@ export default function ExplainerPanel({
             {item.marketReaction?.length ? (
               <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
                 {item.marketReaction.map((r) => (
-                  <MoveText key={r.instrument} instrument={r.instrument} move={r.move} />
+                  <MoveText key={r.instrument} reaction={r} />
                 ))}
               </div>
             ) : (

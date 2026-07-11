@@ -21,6 +21,29 @@ export type EventType =
 export interface MarketReaction {
   instrument: string; // e.g. "ES", "NVDA", "EUR/USD"
   move: string; // e.g. "-0.8%", "+12bp"
+  /**
+   * Measurement window for the move — a move without its period is
+   * meaningless to a trader. Duration form ("1m", "5m", "30m") or a phrase
+   * ("since release", "on day", "overnight"). Empty string = unknown window
+   * (legacy journal entries); rendered without an interval.
+   */
+  interval: string;
+}
+
+/**
+ * "+0.3% in 1m" / "-7bp since release" — durations get "in", phrases render
+ * as written, and an empty interval falls back to the bare move.
+ */
+export function formatMove(r: Pick<MarketReaction, "move" | "interval">): string {
+  if (!r.interval) return r.move;
+  return /^\d+(s|m|h|d)$/.test(r.interval)
+    ? `${r.move} in ${r.interval}`
+    : `${r.move} ${r.interval}`;
+}
+
+/** "ES +0.3% in 1m" — the full reaction string used in text contexts. */
+export function formatReaction(r: MarketReaction): string {
+  return `${r.instrument} ${formatMove(r)}`;
 }
 
 export interface NewsItem {

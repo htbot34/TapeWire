@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { NewsItem } from "@/lib/news/types";
+import { formatReaction } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 import { historicalEventProvider } from "@/lib/history";
 import { mockExplanation, mockFollowUpReply } from "@/lib/explainFallback";
@@ -45,7 +46,7 @@ function formatHistory(history: HistoricalEventContext | null): string {
   const rows = history.occurrences
     .map(
       (o) =>
-        `  ${o.date}${o.actual ? ` · ${o.actual}${o.consensus ? ` vs ${o.consensus} exp` : ""}` : ""}${o.surprise ? ` (${o.surprise})` : ""} → ${o.reactions.map((r) => `${r.instrument} ${r.move}`).join(", ")}`,
+        `  ${o.date}${o.actual ? ` · ${o.actual}${o.consensus ? ` vs ${o.consensus} exp` : ""}` : ""}${o.surprise ? ` (${o.surprise})` : ""} → ${o.reactions.map(formatReaction).join(", ")}`,
     )
     .join("\n");
   return [
@@ -68,7 +69,7 @@ function buildItemContext(item: NewsItem, watchlist: string[]): string {
   if (item.pairs?.length) parts.push(`TAGGED FX PAIRS: ${item.pairs.join(", ")}`);
   if (item.marketReaction?.length) {
     parts.push(
-      `MARKET REACTION: ${item.marketReaction.map((r) => `${r.instrument} ${r.move}`).join(", ")}`,
+      `MARKET REACTION (each move with its measurement window): ${item.marketReaction.map(formatReaction).join(", ")}`,
     );
   }
   if (item.body) parts.push(`ARTICLE BODY: ${item.body}`);

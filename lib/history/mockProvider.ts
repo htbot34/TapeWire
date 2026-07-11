@@ -22,9 +22,9 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+0.2% m/m",
         surprise: "cooler",
         reactions: [
-          { instrument: "NQ", move: "+1.6%" },
-          { instrument: "ES", move: "+1.1%" },
-          { instrument: "10Y", move: "-9bp" },
+          { instrument: "NQ", move: "+1.6%", interval: "5m" },
+          { instrument: "ES", move: "+1.1%", interval: "5m" },
+          { instrument: "10Y", move: "-9bp", interval: "30m" },
         ],
       },
       {
@@ -33,8 +33,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+0.3% m/m",
         surprise: "in line",
         reactions: [
-          { instrument: "NQ", move: "+0.2%" },
-          { instrument: "ES", move: "+0.1%" },
+          { instrument: "NQ", move: "+0.2%", interval: "5m" },
+          { instrument: "ES", move: "+0.1%", interval: "5m" },
         ],
       },
       {
@@ -43,9 +43,9 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+0.3% m/m",
         surprise: "hotter",
         reactions: [
-          { instrument: "NQ", move: "-1.8%" },
-          { instrument: "ES", move: "-1.2%" },
-          { instrument: "DXY", move: "+0.6%" },
+          { instrument: "NQ", move: "-1.8%", interval: "5m" },
+          { instrument: "ES", move: "-1.2%", interval: "5m" },
+          { instrument: "DXY", move: "+0.6%", interval: "30m" },
         ],
       },
       {
@@ -54,9 +54,9 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+0.3% m/m",
         surprise: "hotter",
         reactions: [
-          { instrument: "NQ", move: "-1.1%" },
-          { instrument: "ES", move: "-0.8%" },
-          { instrument: "10Y", move: "+7bp" },
+          { instrument: "NQ", move: "-1.1%", interval: "5m" },
+          { instrument: "ES", move: "-0.8%", interval: "5m" },
+          { instrument: "10Y", move: "+7bp", interval: "30m" },
         ],
       },
       {
@@ -65,8 +65,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+0.2% m/m",
         surprise: "hotter",
         reactions: [
-          { instrument: "NQ", move: "-0.9%" },
-          { instrument: "ES", move: "-0.6%" },
+          { instrument: "NQ", move: "-0.9%", interval: "5m" },
+          { instrument: "ES", move: "-0.6%", interval: "5m" },
         ],
       },
       {
@@ -75,9 +75,9 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+0.3% m/m",
         surprise: "cooler",
         reactions: [
-          { instrument: "NQ", move: "+1.2%" },
-          { instrument: "ES", move: "+0.8%" },
-          { instrument: "10Y", move: "-6bp" },
+          { instrument: "NQ", move: "+1.2%", interval: "5m" },
+          { instrument: "ES", move: "+0.8%", interval: "5m" },
+          { instrument: "10Y", move: "-6bp", interval: "30m" },
         ],
       },
     ],
@@ -95,8 +95,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+130K",
         surprise: "slight beat",
         reactions: [
-          { instrument: "ES", move: "+0.3%" },
-          { instrument: "10Y", move: "+4bp" },
+          { instrument: "ES", move: "+0.3%", interval: "5m" },
+          { instrument: "10Y", move: "+4bp", interval: "30m" },
         ],
       },
       {
@@ -105,8 +105,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+138K",
         surprise: "beat",
         reactions: [
-          { instrument: "ES", move: "+1.0%" },
-          { instrument: "DXY", move: "+0.4%" },
+          { instrument: "ES", move: "+1.0%", interval: "5m" },
+          { instrument: "DXY", move: "+0.4%", interval: "30m" },
         ],
       },
       {
@@ -115,9 +115,9 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+140K",
         surprise: "hot",
         reactions: [
-          { instrument: "ES", move: "-0.5%" },
-          { instrument: "10Y", move: "+10bp" },
-          { instrument: "DXY", move: "+0.6%" },
+          { instrument: "ES", move: "-0.5%", interval: "5m" },
+          { instrument: "10Y", move: "+10bp", interval: "30m" },
+          { instrument: "DXY", move: "+0.6%", interval: "30m" },
         ],
       },
       {
@@ -126,8 +126,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+160K",
         surprise: "slight miss",
         reactions: [
-          { instrument: "ES", move: "+0.4%" },
-          { instrument: "10Y", move: "-5bp" },
+          { instrument: "ES", move: "+0.4%", interval: "5m" },
+          { instrument: "10Y", move: "-5bp", interval: "30m" },
         ],
       },
       {
@@ -136,8 +136,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+175K",
         surprise: "miss",
         reactions: [
-          { instrument: "ES", move: "-0.2%" },
-          { instrument: "10Y", move: "-8bp" },
+          { instrument: "ES", move: "-0.2%", interval: "5m" },
+          { instrument: "10Y", move: "-8bp", interval: "30m" },
         ],
       },
     ],
@@ -155,9 +155,9 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "hold",
         surprise: "dovish dots (2 cuts)",
         reactions: [
-          { instrument: "ES", move: "+0.6%" },
-          { instrument: "NQ", move: "+0.9%" },
-          { instrument: "10Y", move: "-6bp" },
+          { instrument: "ES", move: "+0.6%", interval: "30m" },
+          { instrument: "NQ", move: "+0.9%", interval: "30m" },
+          { instrument: "10Y", move: "-6bp", interval: "30m" },
         ],
       },
       {
@@ -166,9 +166,9 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "hold",
         surprise: "hawkish presser",
         reactions: [
-          { instrument: "ES", move: "-1.1%" },
-          { instrument: "NQ", move: "-1.5%" },
-          { instrument: "DXY", move: "+0.5%" },
+          { instrument: "ES", move: "-1.1%", interval: "30m" },
+          { instrument: "NQ", move: "-1.5%", interval: "30m" },
+          { instrument: "DXY", move: "+0.5%", interval: "30m" },
         ],
       },
       {
@@ -177,8 +177,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "cut 25bp",
         surprise: "as expected",
         reactions: [
-          { instrument: "ES", move: "+0.4%" },
-          { instrument: "10Y", move: "-3bp" },
+          { instrument: "ES", move: "+0.4%", interval: "30m" },
+          { instrument: "10Y", move: "-3bp", interval: "30m" },
         ],
       },
       {
@@ -187,8 +187,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "hold",
         surprise: "as expected",
         reactions: [
-          { instrument: "ES", move: "-0.3%" },
-          { instrument: "2Y", move: "+2bp" },
+          { instrument: "ES", move: "-0.3%", interval: "30m" },
+          { instrument: "2Y", move: "+2bp", interval: "30m" },
         ],
       },
     ],
@@ -205,7 +205,7 @@ const CONTEXTS: HistoricalEventContext[] = [
         actual: "222K",
         consensus: "224K",
         surprise: "in line",
-        reactions: [{ instrument: "ES", move: "+0.1%" }],
+        reactions: [{ instrument: "ES", move: "+0.1%", interval: "5m" }],
       },
       {
         date: "2026-06-25",
@@ -213,8 +213,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "220K",
         surprise: "soft",
         reactions: [
-          { instrument: "ES", move: "-0.2%" },
-          { instrument: "10Y", move: "-4bp" },
+          { instrument: "ES", move: "-0.2%", interval: "5m" },
+          { instrument: "10Y", move: "-4bp", interval: "30m" },
         ],
       },
       {
@@ -222,14 +222,14 @@ const CONTEXTS: HistoricalEventContext[] = [
         actual: "218K",
         consensus: "225K",
         surprise: "firm",
-        reactions: [{ instrument: "ES", move: "+0.1%" }],
+        reactions: [{ instrument: "ES", move: "+0.1%", interval: "5m" }],
       },
       {
         date: "2026-06-11",
         actual: "226K",
         consensus: "223K",
         surprise: "in line",
-        reactions: [{ instrument: "ES", move: "0.0%" }],
+        reactions: [{ instrument: "ES", move: "0.0%", interval: "5m" }],
       },
     ],
   },
@@ -246,8 +246,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "EPS $0.93",
         surprise: "beat + raised guide",
         reactions: [
-          { instrument: "NVDA", move: "+6.4%" },
-          { instrument: "NQ", move: "+1.1%" },
+          { instrument: "NVDA", move: "+6.4%", interval: "since release" },
+          { instrument: "NQ", move: "+1.1%", interval: "since release" },
         ],
       },
       {
@@ -256,8 +256,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "guide in line",
         surprise: "guide miss",
         reactions: [
-          { instrument: "NVDA", move: "-8.5%" },
-          { instrument: "NQ", move: "-1.3%" },
+          { instrument: "NVDA", move: "-8.5%", interval: "since release" },
+          { instrument: "NQ", move: "-1.3%", interval: "since release" },
         ],
       },
       {
@@ -266,8 +266,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "EPS $0.75",
         surprise: "beat",
         reactions: [
-          { instrument: "NVDA", move: "+5.1%" },
-          { instrument: "NQ", move: "+0.8%" },
+          { instrument: "NVDA", move: "+5.1%", interval: "since release" },
+          { instrument: "NQ", move: "+0.8%", interval: "since release" },
         ],
       },
       {
@@ -276,8 +276,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "beat expected",
         surprise: "sell-the-news",
         reactions: [
-          { instrument: "NVDA", move: "-3.0%" },
-          { instrument: "NQ", move: "-0.4%" },
+          { instrument: "NVDA", move: "-3.0%", interval: "since release" },
+          { instrument: "NQ", move: "-0.4%", interval: "since release" },
         ],
       },
     ],
@@ -295,8 +295,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "EPS $4.55",
         surprise: "beat",
         reactions: [
-          { instrument: "JPM", move: "+2.2%" },
-          { instrument: "XLF", move: "+0.8%" },
+          { instrument: "JPM", move: "+2.2%", interval: "since release" },
+          { instrument: "XLF", move: "+0.8%", interval: "since release" },
         ],
       },
       {
@@ -305,8 +305,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "EPS $4.64",
         surprise: "beat, cautious guide",
         reactions: [
-          { instrument: "JPM", move: "-1.4%" },
-          { instrument: "XLF", move: "-0.5%" },
+          { instrument: "JPM", move: "-1.4%", interval: "since release" },
+          { instrument: "XLF", move: "-0.5%", interval: "since release" },
         ],
       },
       {
@@ -315,8 +315,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "EPS $4.11",
         surprise: "beat",
         reactions: [
-          { instrument: "JPM", move: "+3.0%" },
-          { instrument: "XLF", move: "+1.1%" },
+          { instrument: "JPM", move: "+3.0%", interval: "since release" },
+          { instrument: "XLF", move: "+1.1%", interval: "since release" },
         ],
       },
       {
@@ -324,7 +324,7 @@ const CONTEXTS: HistoricalEventContext[] = [
         actual: "EPS $4.48 vs $4.48 est",
         consensus: "EPS $4.48",
         surprise: "in line",
-        reactions: [{ instrument: "JPM", move: "-0.3%" }],
+        reactions: [{ instrument: "JPM", move: "-0.3%", interval: "since release" }],
       },
     ],
   },
@@ -341,8 +341,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+35% y/y",
         surprise: "beat",
         reactions: [
-          { instrument: "TSM", move: "+4.1%" },
-          { instrument: "SMH", move: "+2.0%" },
+          { instrument: "TSM", move: "+4.1%", interval: "since release" },
+          { instrument: "SMH", move: "+2.0%", interval: "since release" },
         ],
       },
       {
@@ -351,8 +351,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+33% y/y",
         surprise: "beat",
         reactions: [
-          { instrument: "TSM", move: "+2.9%" },
-          { instrument: "NQ", move: "+0.5%" },
+          { instrument: "TSM", move: "+2.9%", interval: "since release" },
+          { instrument: "NQ", move: "+0.5%", interval: "since release" },
         ],
       },
       {
@@ -360,7 +360,7 @@ const CONTEXTS: HistoricalEventContext[] = [
         actual: "rev +36% y/y",
         consensus: "+34% y/y",
         surprise: "slight beat",
-        reactions: [{ instrument: "TSM", move: "+1.2%" }],
+        reactions: [{ instrument: "TSM", move: "+1.2%", interval: "since release" }],
       },
       {
         date: "2025-07-17",
@@ -368,8 +368,8 @@ const CONTEXTS: HistoricalEventContext[] = [
         consensus: "+32% y/y",
         surprise: "mixed",
         reactions: [
-          { instrument: "TSM", move: "-2.1%" },
-          { instrument: "SMH", move: "-0.9%" },
+          { instrument: "TSM", move: "-2.1%", interval: "since release" },
+          { instrument: "SMH", move: "-0.9%", interval: "since release" },
         ],
       },
     ],
