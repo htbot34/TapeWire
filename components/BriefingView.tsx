@@ -6,7 +6,7 @@ import type { NewsItem } from "@/lib/news/types";
 import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import { usePrefs } from "@/lib/store";
 import { briefingDate, dateTimeStamp, relativeTime } from "@/lib/time";
-import { ImpactDot, ReactionChip, SourceTag, TickerChip } from "./atoms";
+import { ImpactTag, ReactionChip, SourceTag, TickerChip } from "./atoms";
 import ExplainerPanel from "./ExplainerPanel";
 import JournalButton from "./JournalButton";
 
@@ -51,7 +51,7 @@ function TopItem({
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <ImpactDot impact={item.impact} />
+            <ImpactTag impact={item.impact} />
             <span className="tnum font-mono text-2xs text-text-low">
               {relativeTime(item.timestamp)} · {dateTimeStamp(item.timestamp)}
             </span>
@@ -154,7 +154,9 @@ function CompactItem({
         role="button"
         aria-expanded={expanded}
       >
-        <ImpactDot impact={item.impact} />
+        <span className="w-[46px] shrink-0">
+          <ImpactTag impact={item.impact} compact />
+        </span>
         <span className="tnum w-9 shrink-0 font-mono text-2xs text-text-low">
           {relativeTime(item.timestamp)}
         </span>
@@ -238,19 +240,19 @@ export default function BriefingView() {
             {briefingDate()} ·{" "}
             {quietNight ? (
               <span className="font-semibold text-impact-med">
-                Quiet overnight — no high-impact events
+                Quiet overnight — no Critical events
               </span>
             ) : (
               <>
-                {highCount} high-impact event{highCount === 1 ? "" : "s"} overnight
+                {highCount} Critical event{highCount === 1 ? "" : "s"} overnight
               </>
             )}{" "}
             · ranked for your watchlist
           </p>
           {quietNight && (
             <p className="mt-1 text-xs text-text-mid">
-              The items below are the most notable of a slow session — amber and
-              gray dots only, nothing at red-folder level.
+              The items below are the most notable of a slow session — Relevant
+              and Context only, nothing at red-folder level.
             </p>
           )}
         </header>

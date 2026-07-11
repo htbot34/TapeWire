@@ -6,13 +6,13 @@ import type { CalendarEvent } from "@/lib/calendar";
 import { calendarEventToNewsItem, calendarProvider } from "@/lib/calendar";
 import { usePrefs } from "@/lib/store";
 import { sameLocalDay, shortTime, tzLabel } from "@/lib/time";
-import { ImpactDot, TickerChip } from "./atoms";
+import { ImpactTag, TickerChip } from "./atoms";
 import ExplainerPanel from "./ExplainerPanel";
 
 const IMPACTS: { value: Impact; label: string; on: string }[] = [
-  { value: "high", label: "High", on: "border-impact-high/60 text-impact-high" },
-  { value: "medium", label: "Med", on: "border-impact-med/60 text-impact-med" },
-  { value: "low", label: "Low", on: "border-text-low/60 text-text-mid" },
+  { value: "high", label: "Critical", on: "border-impact-high/60 text-impact-high" },
+  { value: "medium", label: "Relevant", on: "border-impact-med/60 text-impact-med" },
+  { value: "low", label: "Context", on: "border-text-low/60 text-text-mid" },
 ];
 
 function dayLabel(offset: number, d: Date): string {
@@ -90,7 +90,7 @@ export default function CalendarView() {
               {dayLabel(dayOffset, viewDate)}
             </h1>
             <p className="tnum mt-0.5 font-mono text-xs text-text-mid">
-              All times {tzLabel()} · red = high impact
+              All times {tzLabel()} · CRIT = Critical (red-folder) events
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -160,7 +160,7 @@ export default function CalendarView() {
         {/* column headers */}
         <div className="flex items-baseline gap-2 border-b border-ink-800 px-3 py-1.5 font-mono text-2xs uppercase tracking-wider text-text-low sm:px-4">
           <span className="w-12 shrink-0">Time</span>
-          <span className="w-3 shrink-0" />
+          <span className="w-[46px] shrink-0">Impact</span>
           <span className="w-11 shrink-0">Ccy</span>
           <span className="min-w-0 flex-1">Event</span>
           <span className="hidden w-20 shrink-0 text-right sm:inline">Actual</span>
@@ -201,8 +201,8 @@ export default function CalendarView() {
                     >
                       {shortTime(e.timestamp)}
                     </span>
-                    <span className="w-3 shrink-0">
-                      <ImpactDot impact={e.impact} />
+                    <span className="w-[46px] shrink-0">
+                      <ImpactTag impact={e.impact} compact />
                     </span>
                     <span className="tnum w-11 shrink-0 font-mono text-2xs text-text-mid">
                       {e.currency}

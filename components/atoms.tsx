@@ -1,6 +1,22 @@
 import type { Impact, MarketReaction } from "@/lib/news/types";
 import { formatMove } from "@/lib/news/types";
 
+// Product-wide impact taxonomy: the internal enum stays high/medium/low, the
+// UI always says Critical/Relevant/Context — and never color alone (every
+// dot travels with a text label or an accessible title).
+export const IMPACT_LABEL: Record<Impact, string> = {
+  high: "Critical",
+  medium: "Relevant",
+  low: "Context",
+};
+
+/** Compact mono form for dense rows. */
+export const IMPACT_TAG: Record<Impact, string> = {
+  high: "CRIT",
+  medium: "REL",
+  low: "CTX",
+};
+
 export function ImpactDot({ impact }: { impact: Impact }) {
   const cls =
     impact === "high"
@@ -11,8 +27,42 @@ export function ImpactDot({ impact }: { impact: Impact }) {
   return (
     <span
       className={`inline-block h-[7px] w-[7px] shrink-0 rounded-full ${cls}`}
-      title={`${impact} impact`}
+      title={`${IMPACT_LABEL[impact]} impact`}
     />
+  );
+}
+
+/**
+ * Dot + text label. `compact` renders the CRIT/REL/CTX mono tag for dense
+ * rows; expanded views and the briefing use the full word.
+ */
+export function ImpactTag({
+  impact,
+  compact = false,
+}: {
+  impact: Impact;
+  compact?: boolean;
+}) {
+  const color =
+    impact === "high"
+      ? "text-impact-high"
+      : impact === "medium"
+        ? "text-impact-med"
+        : "text-text-low";
+  return (
+    <span
+      className="inline-flex shrink-0 items-baseline gap-1"
+      title={`${IMPACT_LABEL[impact]} impact`}
+    >
+      <span className="self-center">
+        <ImpactDot impact={impact} />
+      </span>
+      <span
+        className={`font-mono text-2xs font-semibold uppercase tracking-wide ${color}`}
+      >
+        {compact ? IMPACT_TAG[impact] : IMPACT_LABEL[impact]}
+      </span>
+    </span>
   );
 }
 

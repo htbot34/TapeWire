@@ -126,7 +126,7 @@ export default function BreakingBanner() {
             </span>
           </>
         ) : (
-          <span className="text-xs text-text-low">No high-impact items</span>
+          <span className="text-xs text-text-low">No Critical items</span>
         )}
       </div>
     </div>

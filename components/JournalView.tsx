@@ -6,7 +6,7 @@ import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import type { JournalEntry, JournalFolder } from "@/lib/journal";
 import { folderSummary, journalProvider } from "@/lib/journal";
 import { dateTimeStamp, shortDate } from "@/lib/time";
-import { ImpactDot, ReactionChip, TickerChip } from "./atoms";
+import { ImpactTag, ReactionChip, TickerChip } from "./atoms";
 import ExplainerPanel from "./ExplainerPanel";
 
 function EntryRow({
@@ -38,7 +38,9 @@ function EntryRow({
         role="button"
         aria-expanded={expanded}
       >
-        <ImpactDot impact={entry.item.impact} />
+        <span className="w-[46px] shrink-0">
+          <ImpactTag impact={entry.item.impact} compact />
+        </span>
         <span className="tnum w-[92px] shrink-0 font-mono text-2xs text-text-low">
           {dateTimeStamp(entry.item.timestamp)}
         </span>

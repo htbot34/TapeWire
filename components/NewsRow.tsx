@@ -5,7 +5,7 @@ import type { NewsItem } from "@/lib/news/types";
 import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import { usePrefs } from "@/lib/store";
 import { dateTimeStamp, relativeTime } from "@/lib/time";
-import { ImpactDot, ReactionChip, SourceTag, TickerChip } from "./atoms";
+import { IMPACT_LABEL, ImpactTag, ReactionChip, SourceTag, TickerChip } from "./atoms";
 import JournalButton from "./JournalButton";
 
 /**
@@ -44,8 +44,8 @@ export default function NewsRow({
         role="button"
         aria-expanded={expanded}
       >
-        <span className="translate-y-[-1px]">
-          <ImpactDot impact={item.impact} />
+        <span className="w-[46px] shrink-0">
+          <ImpactTag impact={item.impact} compact />
         </span>
         <span className="tnum w-9 shrink-0 font-mono text-2xs text-text-low">
           {relativeTime(item.timestamp, now)}
@@ -95,7 +95,8 @@ export default function NewsRow({
       {expanded && (
         <div className="border-l-2 border-ink-700 bg-ink-900/60 px-4 pb-3 pt-2 sm:ml-4 sm:px-5">
           <div className="tnum font-mono text-2xs text-text-low">
-            {dateTimeStamp(item.timestamp)} · {item.source} · {item.eventType}
+            {dateTimeStamp(item.timestamp)} · {item.source} · {item.eventType} ·{" "}
+            {IMPACT_LABEL[item.impact]}
           </div>
           {item.body && (
             <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-text-mid">
