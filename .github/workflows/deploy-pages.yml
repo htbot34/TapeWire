@@ -53,7 +53,7 @@ jobs:
         run: |
           git checkout HEAD -- app/api
           git rm -r -q --ignore-unmatch _next 404 briefing onboarding settings \
-            404.html index.html index.txt icon.svg .nojekyll
+            journal calendar 404.html index.html index.txt icon.svg .nojekyll
           cp -r out/. .
           rm -rf out
           touch .nojekyll
