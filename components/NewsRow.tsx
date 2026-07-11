@@ -5,7 +5,15 @@ import type { NewsItem } from "@/lib/news/types";
 import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import { usePrefs } from "@/lib/store";
 import { dateTimeStamp, relativeTime } from "@/lib/time";
-import { IMPACT_LABEL, ImpactTag, ReactionChip, SourceTag, TickerChip } from "./atoms";
+import {
+  EconValues,
+  IMPACT_LABEL,
+  ImpactTag,
+  ReactionChip,
+  ScheduledTag,
+  SourceTag,
+  TickerChip,
+} from "./atoms";
 import JournalButton from "./JournalButton";
 
 /**
@@ -94,10 +102,18 @@ export default function NewsRow({
 
       {expanded && (
         <div className="border-l-2 border-ink-700 bg-ink-900/60 px-4 pb-3 pt-2 sm:ml-4 sm:px-5">
-          <div className="tnum font-mono text-2xs text-text-low">
-            {dateTimeStamp(item.timestamp)} · {item.source} · {item.eventType} ·{" "}
-            {IMPACT_LABEL[item.impact]}
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span className="tnum font-mono text-2xs text-text-low">
+              {dateTimeStamp(item.timestamp)} · {item.source} · {item.eventType} ·{" "}
+              {IMPACT_LABEL[item.impact]}
+            </span>
+            <ScheduledTag scheduled={item.scheduled} />
           </div>
+          {item.econ && (
+            <div className="mt-1">
+              <EconValues econ={item.econ} />
+            </div>
+          )}
           {item.body && (
             <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-text-mid">
               {item.body}

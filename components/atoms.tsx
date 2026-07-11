@@ -122,6 +122,45 @@ export function ReactionChip({ reaction }: { reaction: MarketReaction }) {
   );
 }
 
+/** Scheduled (calendar-driven) vs. Unscheduled (surprise) tag. */
+export function ScheduledTag({ scheduled }: { scheduled: boolean }) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-sm border px-1 py-px font-mono text-2xs uppercase tracking-wide ${
+        scheduled
+          ? "border-ink-700 text-text-low"
+          : "border-impact-med/40 text-impact-med"
+      }`}
+      title={
+        scheduled
+          ? "Scheduled — this event was on the calendar"
+          : "Unscheduled — surprise headline, not on any calendar"
+      }
+    >
+      {scheduled ? "Scheduled" : "Unscheduled"}
+    </span>
+  );
+}
+
+/** Inline actual / expected / previous values for econ releases & earnings. */
+export function EconValues({
+  econ,
+}: {
+  econ: { actual?: string; forecast?: string; previous?: string };
+}) {
+  const parts = [
+    econ.actual ? `Actual ${econ.actual}` : null,
+    econ.forecast ? `Exp ${econ.forecast}` : null,
+    econ.previous ? `Prev ${econ.previous}` : null,
+  ].filter(Boolean);
+  if (!parts.length) return null;
+  return (
+    <span className="tnum font-mono text-2xs text-text-mid">
+      {parts.join(" · ")}
+    </span>
+  );
+}
+
 export function SourceTag({
   source,
   sourceType,

@@ -50,6 +50,11 @@ export function calendarEventToNewsItem(e: CalendarEvent): NewsItem {
     correlatedTickers: [],
     assetClasses: e.assetClasses,
     eventType: e.eventType,
+    scheduled: true, // calendar-driven by definition
+    econ:
+      e.actual || e.forecast || e.previous
+        ? { actual: e.actual, forecast: e.forecast, previous: e.previous }
+        : undefined,
     body: `${upcoming ? "Scheduled release" : "Released"} · ${e.currency}${
       parts.length ? ` · ${parts.join(" · ")}` : ""
     }.`,

@@ -2,11 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { newsProvider } from "@/lib/news";
-import type { NewsItem } from "@/lib/news/types";
+import type { NewsItem, RankedBriefingItem } from "@/lib/news/types";
 import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import { usePrefs } from "@/lib/store";
 import { briefingDate, dateTimeStamp, relativeTime } from "@/lib/time";
-import { ImpactTag, ReactionChip, SourceTag, TickerChip } from "./atoms";
+import {
+  EconValues,
+  ImpactTag,
+  ReactionChip,
+  ScheduledTag,
+  SourceTag,
+  TickerChip,
+} from "./atoms";
 import ExplainerPanel from "./ExplainerPanel";
 import JournalButton from "./JournalButton";
 
@@ -22,15 +29,23 @@ function firstSentence(text?: string): string | null {
   return (m ? m[0] : text).trim();
 }
 
+/** "a", "a and b", "a, b, and c" — prose join for the ranked-because line. */
+function joinReasons(reasons: string[]): string {
+  if (reasons.length <= 1) return reasons[0] ?? "";
+  if (reasons.length === 2) return `${reasons[0]} and ${reasons[1]}`;
+  return `${reasons.slice(0, -1).join(", ")}, and ${reasons[reasons.length - 1]}`;
+}
+
 function TopItem({
-  item,
+  ranked,
   rank,
   onExplain,
 }: {
-  item: NewsItem;
+  ranked: RankedBriefingItem;
   rank: number;
   onExplain: (i: NewsItem) => void;
 }) {
+  const item = ranked.item;
   const [expanded, setExpanded] = useState(false);
   const inWatchlist = useWatchlistCheck();
   const byWatchlist = (a: string, b: string) =>
@@ -50,8 +65,9 @@ function TopItem({
           {rank}
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
+          <div className="flex flex-wrap items-baseline gap-2">
             <ImpactTag impact={item.impact} />
+            <ScheduledTag scheduled={item.scheduled} />
             <span className="tnum font-mono text-2xs text-text-low">
               {relativeTime(item.timestamp)} · {dateTimeStamp(item.timestamp)}
             </span>
@@ -60,6 +76,16 @@ function TopItem({
           <p className="mt-1 text-sm font-semibold leading-snug text-text-hi">
             {item.headline}
           </p>
+          {item.econ && (
+            <div className="mt-0.5">
+              <EconValues econ={item.econ} />
+            </div>
+          )}
+          {ranked.reasons.length > 0 && (
+            <p className="mt-1 text-2xs leading-relaxed text-text-low">
+              Ranked #{rank} because: {joinReasons(ranked.reasons)}.
+            </p>
+          )}
           {firstSentence(item.body) && (
             <p className="mt-1 text-xs leading-relaxed text-text-mid">
               {firstSentence(item.body)}
@@ -181,6 +207,10 @@ function CompactItem({
       </div>
       {expanded && (
         <div className="border-l-2 border-ink-700 bg-ink-900/60 px-4 pb-3 pt-2 sm:ml-4">
+          <div className="mb-1.5 flex flex-wrap items-baseline gap-2">
+            <ScheduledTag scheduled={item.scheduled} />
+            {item.econ && <EconValues econ={item.econ} />}
+          </div>
           {item.body && (
             <p className="max-w-3xl text-[13px] leading-relaxed text-text-mid">
               {item.body}
@@ -210,21 +240,22 @@ function CompactItem({
 
 export default function BriefingView() {
   const { watchlist, assetClasses } = usePrefs();
-  const [items, setItems] = useState<NewsItem[] | null>(null);
+  const [ranked, setRanked] = useState<RankedBriefingItem[] | null>(null);
   const [explaining, setExplaining] = useState<NewsItem | null>(null);
 
   useEffect(() => {
     newsProvider
       .getOvernightBriefing({ watchlist, assetClasses, watchlistOnly: true })
-      .then(setItems);
+      .then(setRanked);
   }, [watchlist, assetClasses]);
 
-  const highCount = items?.filter((i) => i.impact === "high").length ?? 0;
-  const quietNight = items !== null && items.length > 0 && highCount === 0;
-  // No cap: everything overnight shows, ranked high → low. Top 4 get the
-  // prominent treatment, the rest list compact below.
-  const top = items?.slice(0, 4) ?? [];
-  const rest = items?.slice(4) ?? [];
+  const highCount = ranked?.filter((r) => r.item.impact === "high").length ?? 0;
+  const quietNight = ranked !== null && ranked.length > 0 && highCount === 0;
+  // Dynamic Focus count: everything above the provider's rank threshold
+  // (3–7 on a typical night), never padded to a fixed number. Everything
+  // else stays in "Also overnight" with no cap.
+  const top = ranked?.filter((r) => r.focus) ?? [];
+  const rest = ranked?.filter((r) => !r.focus).map((r) => r.item) ?? [];
 
   return (
     <>
@@ -257,24 +288,30 @@ export default function BriefingView() {
           )}
         </header>
 
-        {items === null ? (
+        {ranked === null ? (
           <div className="mt-6 space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="skeleton h-16" />
             ))}
           </div>
-        ) : items.length === 0 ? (
+        ) : ranked.length === 0 ? (
           <p className="mt-8 text-sm text-text-mid">
             Quiet night — nothing ranked for your watchlist. Try widening your
-            symbols in settings.
+            symbols in settings, or save events to your Journal from the tape
+            so quiet nights still build your event history.
           </p>
         ) : (
           <>
-            <ol className="mt-4 space-y-2">
-              {top.map((item, i) => (
+            {top.length > 0 && (
+              <h2 className="mt-5 border-b border-ink-800 pb-1 font-mono text-2xs uppercase tracking-[0.25em] text-phos">
+                Your Focus — ranked for your market
+              </h2>
+            )}
+            <ol className="mt-3 space-y-2">
+              {top.map((r, i) => (
                 <TopItem
-                  key={item.id}
-                  item={item}
+                  key={r.item.id}
+                  ranked={r}
                   rank={i + 1}
                   onExplain={setExplaining}
                 />

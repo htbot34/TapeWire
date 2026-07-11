@@ -1,5 +1,6 @@
 import type { NewsProvider } from "./provider";
-import type { Impact, NewsItem, UserFilters } from "./types";
+import type { Impact, MarketReaction, NewsItem, RankedBriefingItem, UserFilters } from "./types";
+import { formatMove } from "./types";
 import { buildBreakingItem, buildCustomSourceItem, mockNewsItems } from "./mockData";
 
 const IMPACT_WEIGHT: Record<Impact, number> = { high: 100, medium: 40, low: 10 };
@@ -7,6 +8,73 @@ const IMPACT_WEIGHT: Record<Impact, number> = { high: 100, medium: 40, low: 10 }
 /** Briefing window: items between 2h and 16h old count as "overnight". */
 const BRIEFING_MIN_AGE_MS = 2 * 60 * 60 * 1000;
 const BRIEFING_MAX_AGE_MS = 16 * 60 * 60 * 1000;
+
+/**
+ * Rank-score threshold for the "Your Focus" section. On a typical mock night
+ * this yields 5–6 items; the cap is 7 and the list is never padded — a quiet
+ * night simply shows fewer (the quiet-night header handles the empty case).
+ */
+const FOCUS_THRESHOLD = 70;
+const FOCUS_MAX = 7;
+
+/** The reaction with the largest absolute % move (falls back to the first). */
+function biggestReaction(item: NewsItem): MarketReaction | null {
+  const rs = item.marketReaction ?? [];
+  if (rs.length === 0) return null;
+  const pct = (r: MarketReaction) => {
+    const m = r.move.match(/-?\d+(?:\.\d+)?(?=\s*%)/);
+    return m ? Math.abs(parseFloat(m[0])) : -1;
+  };
+  return rs.reduce((best, r) => (pct(r) > pct(best) ? r : best), rs[0]);
+}
+
+/**
+ * Deterministic "Ranked #N because…" components — template-based from item
+ * data + the user's watchlist/asset classes only. No AI call: this must
+ * render instantly and can never fabricate.
+ */
+function focusReasons(item: NewsItem, filters: UserFilters): string[] {
+  const reasons: string[] = [];
+  const watch = new Set(filters.watchlist.map((s) => s.toUpperCase()));
+  const inWatch = (s: string) => watch.has(s.toUpperCase());
+
+  const directHits = [...item.directTickers, ...(item.pairs ?? [])].filter(inWatch);
+  const corrHits = item.correlatedTickers.filter(inWatch);
+  if (directHits.length) {
+    reasons.push(`it directly tags ${directHits.slice(0, 3).join("/")} on your watchlist`);
+  } else if (corrHits.length && item.impact === "high") {
+    reasons.push(`it hits ${corrHits.slice(0, 2).join("/")} you watch via correlation`);
+  } else if (
+    item.impact === "high" &&
+    item.assetClasses.some((a) => filters.assetClasses.includes(a))
+  ) {
+    const classes = item.assetClasses
+      .filter((a) => filters.assetClasses.includes(a))
+      .join("/");
+    reasons.push(`it's Critical macro for the ${classes} markets you trade`);
+  }
+
+  if (item.impact === "high" && item.scheduled && item.eventType === "econ-release") {
+    reasons.push("it's a red-folder scheduled release");
+  } else if (item.impact === "high" && !item.scheduled) {
+    reasons.push("it's an unscheduled Critical headline");
+  } else if (item.impact === "high") {
+    reasons.push("it's rated Critical");
+  }
+
+  const r = biggestReaction(item);
+  if (r) {
+    // Phrase intervals ("since release", "overnight") already carry their
+    // own context — only duration intervals get the trailing clause.
+    const suffix = /^\d+(s|m|h|d)$/.test(r.interval)
+      ? item.scheduled
+        ? " after the release"
+        : " on the headline"
+      : "";
+    reasons.push(`${r.instrument} moved ${formatMove(r)}${suffix}`);
+  }
+  return reasons.slice(0, 3);
+}
 
 function matchesWatchlist(item: NewsItem, filters: UserFilters): boolean {
   const watch = new Set(filters.watchlist.map((s) => s.toUpperCase()));
@@ -78,7 +146,7 @@ export class MockNewsProvider implements NewsProvider {
     );
   }
 
-  async getOvernightBriefing(filters: UserFilters): Promise<NewsItem[]> {
+  async getOvernightBriefing(filters: UserFilters): Promise<RankedBriefingItem[]> {
     const now = Date.now();
     const overnight = this.items.filter((item) => {
       const age = now - new Date(item.timestamp).getTime();
@@ -95,7 +163,16 @@ export class MockNewsProvider implements NewsProvider {
         return { item, score };
       },
     );
-    return scored.sort((a, b) => b.score - a.score).map((s) => s.item);
+    const ranked = scored.sort((a, b) => b.score - a.score);
+    return ranked.map(({ item, score }, i) => {
+      const focus = score >= FOCUS_THRESHOLD && i < FOCUS_MAX;
+      return {
+        item,
+        score,
+        focus,
+        reasons: focus ? focusReasons(item, filters) : [],
+      };
+    });
   }
 
   subscribeToBreaking(cb: (item: NewsItem) => void): () => void {

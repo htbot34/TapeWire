@@ -67,9 +67,35 @@ export interface NewsItem {
   assetClasses: AssetClass[];
   pairs?: string[]; // ["EUR/USD"] for FX items
   eventType: EventType;
+  /**
+   * True when the event was on a known calendar (econ release, earnings,
+   * scheduled speech/testimony); false for tweets, surprise headlines and
+   * geopolitical developments.
+   */
+  scheduled: boolean;
+  /**
+   * Actual / consensus / prior figures for econ releases and earnings —
+   * shared with the calendar dataset so feed, briefing and calendar rows
+   * carry the same values for the same print.
+   */
+  econ?: { actual?: string; forecast?: string; previous?: string };
   body?: string; // expanded article text (mock)
   url?: string;
   marketReaction?: MarketReaction[];
+}
+
+/**
+ * One briefing row: the item plus the rank score and the deterministic,
+ * template-generated components of its "Ranked #N because…" line. Reasons
+ * are derived only from item data + user filters — no AI call, renders
+ * instantly, never fabricates.
+ */
+export interface RankedBriefingItem {
+  item: NewsItem;
+  score: number;
+  /** True when the item cleared the Focus threshold (top 3–7 treatment). */
+  focus: boolean;
+  reasons: string[];
 }
 
 // Journal entries denormalize NewsItem snapshots at save time, so items
