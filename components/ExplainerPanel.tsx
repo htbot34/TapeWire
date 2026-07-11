@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MarketReaction, NewsItem } from "@/lib/news/types";
-import { formatMove } from "@/lib/news/types";
+import { formatMove, getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 import { historicalEventProvider } from "@/lib/history";
 import { usePrefs } from "@/lib/store";
@@ -223,13 +223,12 @@ export default function ExplainerPanel({
   const followUpStreaming = status === "streaming" && messages.length > 0;
 
   const watch = new Set(watchlist.map((s) => s.toUpperCase()));
-  const symbols = Array.from(
-    new Set([
-      ...item.tickers,
-      ...(item.pairs ?? []),
-      ...(history?.symbols ?? []),
-    ]),
-  );
+  const direct = [...getDirectTickers(item), ...(item.pairs ?? [])];
+  const correlated = getCorrelatedTickers(item);
+  // History-typical symbols not already tagged on the item render as a muted
+  // "also typically reacts" line, never mixed into the item's own tags.
+  const shown = new Set([...direct, ...correlated].map((s) => s.toUpperCase()));
+  const typical = (history?.symbols ?? []).filter((s) => !shown.has(s.toUpperCase()));
 
   const aiSlot = (text: string | undefined) =>
     text ? (
@@ -321,15 +320,41 @@ export default function ExplainerPanel({
           {/* ── 4 · Instruments affected ────────────────────────────────── */}
           <div className="border-b border-ink-800/60 px-4 py-3">
             <SectionLabel>Instruments affected</SectionLabel>
-            {symbols.length ? (
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {symbols.map((s) => (
-                  <TickerChip key={s} symbol={s} inWatchlist={watch.has(s.toUpperCase())} />
-                ))}
+            {direct.length > 0 && (
+              <div className="mt-1.5">
+                <span className="mr-1.5 font-mono text-2xs text-text-mid">Direct</span>
+                <span className="inline-flex flex-wrap gap-1 align-middle">
+                  {direct.map((s) => (
+                    <TickerChip key={s} symbol={s} inWatchlist={watch.has(s.toUpperCase())} />
+                  ))}
+                </span>
               </div>
-            ) : (
+            )}
+            {correlated.length > 0 && (
+              <div className="mt-1.5">
+                <span className="mr-1.5 font-mono text-2xs text-text-low">
+                  Via correlation
+                </span>
+                <span className="inline-flex flex-wrap gap-1 align-middle">
+                  {correlated.map((s) => (
+                    <TickerChip
+                      key={s}
+                      symbol={s}
+                      inWatchlist={watch.has(s.toUpperCase())}
+                      variant="correlated"
+                    />
+                  ))}
+                </span>
+              </div>
+            )}
+            {direct.length === 0 && correlated.length === 0 && (
               <p className="mt-1 text-2xs text-text-low">
                 No instruments tagged on this item.
+              </p>
+            )}
+            {typical.length > 0 && (
+              <p className="mt-1.5 text-2xs text-text-low">
+                Also typically reacts: {typical.join(", ")}
               </p>
             )}
           </div>

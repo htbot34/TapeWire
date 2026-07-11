@@ -1,5 +1,5 @@
 import type { NewsItem } from "@/lib/news/types";
-import { formatReaction } from "@/lib/news/types";
+import { allTickers, formatReaction } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 
 // Canned explainer text used wherever the live Anthropic call is unavailable:
@@ -12,7 +12,7 @@ export function mockExplanation(
   watchlist: string[],
   history?: HistoricalEventContext | null,
 ): string {
-  const symbols = [...item.tickers, ...(item.pairs ?? [])];
+  const symbols = [...allTickers(item), ...(item.pairs ?? [])];
   const watchHits = symbols.filter((s) => watchlist.includes(s));
   const reaction = item.marketReaction?.map(formatReaction).join(", ");
 

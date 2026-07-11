@@ -53,13 +53,45 @@ export interface NewsItem {
   sourceType: SourceType;
   timestamp: string; // ISO
   impact: Impact; // red/orange/gray folder convention
-  tickers: string[]; // ["NVDA", "SPY"] — used for filtering
+  /**
+   * Instruments the event directly reprices — named entities, the released
+   * series' own market (e.g. NVDA/AMD/SMH on a chip-export headline).
+   */
+  directTickers: string[];
+  /**
+   * Read-through / correlation exposure — sector ETFs, index futures, peers
+   * (e.g. NQ/ES on the same chip-export headline). Rendered muted; the
+   * watchlist filter only matches these on Critical items.
+   */
+  correlatedTickers: string[];
   assetClasses: AssetClass[];
   pairs?: string[]; // ["EUR/USD"] for FX items
   eventType: EventType;
   body?: string; // expanded article text (mock)
   url?: string;
   marketReaction?: MarketReaction[];
+}
+
+// Journal entries denormalize NewsItem snapshots at save time, so items
+// persisted before the direct/correlated split may still carry a legacy
+// `tickers` array. These accessors are the one tolerated compatibility seam —
+// live provider data always has the new shape.
+
+export function getDirectTickers(item: NewsItem): string[] {
+  return (
+    item.directTickers ??
+    (item as unknown as { tickers?: string[] }).tickers ??
+    []
+  );
+}
+
+export function getCorrelatedTickers(item: NewsItem): string[] {
+  return item.correlatedTickers ?? [];
+}
+
+/** Direct + correlated (deduped) — for contexts that don't distinguish. */
+export function allTickers(item: NewsItem): string[] {
+  return Array.from(new Set([...getDirectTickers(item), ...getCorrelatedTickers(item)]));
 }
 
 export interface UserFilters {

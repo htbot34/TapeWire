@@ -1,6 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { NewsItem } from "@/lib/news/types";
-import { formatReaction } from "@/lib/news/types";
+import {
+  formatReaction,
+  getCorrelatedTickers,
+  getDirectTickers,
+} from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 import { historicalEventProvider } from "@/lib/history";
 import { mockExplanation, mockFollowUpReply } from "@/lib/explainFallback";
@@ -65,7 +69,12 @@ function buildItemContext(item: NewsItem, watchlist: string[]): string {
     `TIMESTAMP: ${item.timestamp}`,
     `EVENT TYPE: ${item.eventType} | IMPACT: ${item.impact}`,
   ];
-  if (item.tickers.length) parts.push(`TAGGED TICKERS: ${item.tickers.join(", ")}`);
+  const direct = getDirectTickers(item);
+  const correlated = getCorrelatedTickers(item);
+  if (direct.length) parts.push(`DIRECTLY AFFECTED TICKERS: ${direct.join(", ")}`);
+  if (correlated.length) {
+    parts.push(`CORRELATED (read-through) TICKERS: ${correlated.join(", ")}`);
+  }
   if (item.pairs?.length) parts.push(`TAGGED FX PAIRS: ${item.pairs.join(", ")}`);
   if (item.marketReaction?.length) {
     parts.push(

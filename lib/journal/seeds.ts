@@ -15,7 +15,16 @@ export const seedFolders: JournalFolder[] = [
 ];
 
 const snap = (
-  partial: Pick<NewsItem, "headline" | "source" | "timestamp" | "impact" | "tickers" | "eventType"> &
+  partial: Pick<
+    NewsItem,
+    | "headline"
+    | "source"
+    | "timestamp"
+    | "impact"
+    | "directTickers"
+    | "correlatedTickers"
+    | "eventType"
+  > &
     Partial<NewsItem>,
 ): NewsItem => ({
   id: `seed-${partial.timestamp}`,
@@ -48,7 +57,8 @@ export const seedEntries: JournalEntry[] = [
       source: "BLS",
       timestamp: "2026-06-11T12:30:00.000Z",
       impact: "high",
-      tickers: ["SPY", "QQQ", "TLT"],
+      directTickers: ["SPY", "QQQ", "TLT"],
+      correlatedTickers: [],
       eventType: "econ-release",
       url: "https://www.bls.gov/news.release/cpi.htm",
     }),
@@ -66,7 +76,8 @@ export const seedEntries: JournalEntry[] = [
       source: "BLS",
       timestamp: "2026-05-13T12:30:00.000Z",
       impact: "high",
-      tickers: ["SPY", "QQQ", "TLT"],
+      directTickers: ["SPY", "QQQ", "TLT"],
+      correlatedTickers: [],
       eventType: "econ-release",
       url: "https://www.bls.gov/news.release/cpi.htm",
     }),
@@ -83,7 +94,8 @@ export const seedEntries: JournalEntry[] = [
       source: "BLS",
       timestamp: "2026-04-10T12:30:00.000Z",
       impact: "high",
-      tickers: ["SPY", "QQQ", "TLT", "GLD"],
+      directTickers: ["SPY", "QQQ", "TLT", "GLD"],
+      correlatedTickers: [],
       eventType: "econ-release",
       url: "https://www.bls.gov/news.release/cpi.htm",
     }),
@@ -103,7 +115,8 @@ export const seedEntries: JournalEntry[] = [
       source: "Federal Reserve",
       timestamp: "2026-06-17T18:00:00.000Z",
       impact: "high",
-      tickers: ["SPY", "QQQ", "TLT"],
+      directTickers: ["SPY", "QQQ", "TLT"],
+      correlatedTickers: [],
       eventType: "econ-release",
       url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
     }),
@@ -121,7 +134,8 @@ export const seedEntries: JournalEntry[] = [
       source: "Federal Reserve",
       timestamp: "2026-04-29T18:00:00.000Z",
       impact: "high",
-      tickers: ["SPY", "QQQ", "TLT"],
+      directTickers: ["SPY", "QQQ", "TLT"],
+      correlatedTickers: [],
       eventType: "econ-release",
       url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
     }),
@@ -141,7 +155,8 @@ export const seedEntries: JournalEntry[] = [
       source: "Reuters",
       timestamp: "2026-05-27T20:20:00.000Z",
       impact: "high",
-      tickers: ["NVDA", "SMH", "QQQ"],
+      directTickers: ["NVDA"],
+      correlatedTickers: ["SMH", "QQQ"],
       eventType: "earnings",
       sourceType: "wire",
       assetClasses: ["equities", "options"],
@@ -160,7 +175,8 @@ export const seedEntries: JournalEntry[] = [
       source: "Reuters",
       timestamp: "2026-02-25T21:20:00.000Z",
       impact: "high",
-      tickers: ["NVDA", "SMH", "QQQ"],
+      directTickers: ["NVDA"],
+      correlatedTickers: ["SMH", "QQQ"],
       eventType: "earnings",
       sourceType: "wire",
       assetClasses: ["equities", "options"],

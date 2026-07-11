@@ -19,23 +19,37 @@ export function ImpactDot({ impact }: { impact: Impact }) {
 /**
  * Ticker tag on a row. `inWatchlist` gets the filled accent treatment so the
  * trader sees "this touches MY symbols" at a glance; other affected tickers
- * stay outlined/muted.
+ * stay outlined/muted. `variant="correlated"` renders the quieter dashed
+ * treatment for read-through exposure ("via correlation") — watchlist
+ * highlighting still applies, just softer.
  */
 export function TickerChip({
   symbol,
   inWatchlist = false,
+  variant = "direct",
 }: {
   symbol: string;
   inWatchlist?: boolean;
+  variant?: "direct" | "correlated";
 }) {
+  const correlated = variant === "correlated";
+  const cls = correlated
+    ? inWatchlist
+      ? "border-dashed border-phos/40 text-phos/80"
+      : "border-dashed border-ink-700/80 text-text-low"
+    : inWatchlist
+      ? "border-phos/60 bg-phos-faint font-semibold text-phos"
+      : "border-ink-700 bg-ink-850 text-text-mid";
   return (
     <span
-      className={`tnum inline-flex shrink-0 items-center rounded-sm border px-1 py-px font-mono text-2xs ${
-        inWatchlist
-          ? "border-phos/60 bg-phos-faint font-semibold text-phos"
-          : "border-ink-700 bg-ink-850 text-text-mid"
-      }`}
-      title={inWatchlist ? `${symbol} — on your watchlist` : symbol}
+      className={`tnum inline-flex shrink-0 items-center rounded-sm border px-1 py-px font-mono text-2xs ${cls}`}
+      title={
+        correlated
+          ? `${symbol} — exposure via correlation${inWatchlist ? " (on your watchlist)" : ""}`
+          : inWatchlist
+            ? `${symbol} — on your watchlist`
+            : symbol
+      }
     >
       {symbol}
     </span>

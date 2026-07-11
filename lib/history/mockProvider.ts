@@ -383,8 +383,17 @@ const byKey = new Map(CONTEXTS.map((c) => [c.key, c]));
  * all eventType "econ-release") and ticker+eventType for earnings. Returns
  * null when the dataset has nothing — the UI then shows no table.
  */
-export function historyKeyFor(item: Pick<NewsItem, "headline" | "eventType" | "tickers">): string | null {
+export function historyKeyFor(
+  item: Pick<NewsItem, "headline" | "eventType" | "directTickers" | "correlatedTickers">,
+): string | null {
   const h = item.headline.toUpperCase();
+  // Direct + correlated, tolerant of legacy journal snapshots that predate
+  // the split (they carry a plain `tickers` array instead).
+  const tickers = [
+    ...(item.directTickers ?? []),
+    ...(item.correlatedTickers ?? []),
+    ...((item as unknown as { tickers?: string[] }).tickers ?? []),
+  ];
   // US CPI only — the feed also carries UK/NZ/India/euro-zone prints the
   // dataset doesn't cover.
   if (/\bCPI\b/.test(h) && !/(UK|NEW ZEALAND|NZ\b|INDIA|EURO|CHINA|JAPAN|GERMAN)/.test(h)) {
@@ -394,9 +403,9 @@ export function historyKeyFor(item: Pick<NewsItem, "headline" | "eventType" | "t
   if (/\bFOMC\b/.test(h)) return "fomc";
   if (/JOBLESS CLAIMS/.test(h)) return "us-jobless-claims";
   if (item.eventType === "earnings" || /EARNINGS|BEATS|REVENUE/.test(h)) {
-    if (item.tickers.includes("NVDA") && /NVDA|NVIDIA/.test(h)) return "nvda-earnings";
-    if (item.tickers.includes("JPM") && /JPM|JPMORGAN/.test(h)) return "jpm-earnings";
-    if (item.tickers.includes("TSM") || /TSMC/.test(h)) return "tsmc-earnings";
+    if (tickers.includes("NVDA") && /NVDA|NVIDIA/.test(h)) return "nvda-earnings";
+    if (tickers.includes("JPM") && /JPM|JPMORGAN/.test(h)) return "jpm-earnings";
+    if (tickers.includes("TSM") || /TSMC/.test(h)) return "tsmc-earnings";
   }
   return null;
 }

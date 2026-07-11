@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { newsProvider } from "@/lib/news";
 import type { NewsItem } from "@/lib/news/types";
+import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import { usePrefs } from "@/lib/store";
 import { briefingDate, dateTimeStamp, relativeTime } from "@/lib/time";
 import { ImpactDot, ReactionChip, SourceTag, TickerChip } from "./atoms";
@@ -32,9 +33,10 @@ function TopItem({
 }) {
   const [expanded, setExpanded] = useState(false);
   const inWatchlist = useWatchlistCheck();
-  const symbols = [...item.tickers, ...(item.pairs ?? [])].sort(
-    (a, b) => Number(inWatchlist(b)) - Number(inWatchlist(a)),
-  );
+  const byWatchlist = (a: string, b: string) =>
+    Number(inWatchlist(b)) - Number(inWatchlist(a));
+  const direct = [...getDirectTickers(item), ...(item.pairs ?? [])].sort(byWatchlist);
+  const correlated = [...getCorrelatedTickers(item)].sort(byWatchlist);
 
   return (
     <li className="border border-ink-800 bg-ink-900/60">
@@ -67,8 +69,11 @@ function TopItem({
             {item.marketReaction?.map((r) => (
               <ReactionChip key={r.instrument} reaction={r} />
             ))}
-            {symbols.slice(0, 4).map((s) => (
+            {direct.slice(0, 4).map((s) => (
               <TickerChip key={s} symbol={s} inWatchlist={inWatchlist(s)} />
+            ))}
+            {correlated.slice(0, 3).map((s) => (
+              <TickerChip key={s} symbol={s} inWatchlist={inWatchlist(s)} variant="correlated" />
             ))}
           </div>
         </div>
@@ -98,10 +103,23 @@ function TopItem({
               {item.body}
             </p>
           )}
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {symbols.map((s) => (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {direct.map((s) => (
               <TickerChip key={s} symbol={s} inWatchlist={inWatchlist(s)} />
             ))}
+            {correlated.length > 0 && (
+              <span className="ml-1 flex items-center gap-1">
+                <span className="font-mono text-2xs text-text-low">via correlation</span>
+                {correlated.map((s) => (
+                  <TickerChip
+                    key={s}
+                    symbol={s}
+                    inWatchlist={inWatchlist(s)}
+                    variant="correlated"
+                  />
+                ))}
+              </span>
+            )}
           </div>
           {item.url && (
             <a

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { NewsItem } from "@/lib/news/types";
+import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import { usePrefs } from "@/lib/store";
 import { dateTimeStamp, relativeTime } from "@/lib/time";
 import { ImpactDot, ReactionChip, SourceTag, TickerChip } from "./atoms";
@@ -25,10 +26,15 @@ export default function NewsRow({
   const [expanded, setExpanded] = useState(false);
   const watch = new Set(watchlist.map((s) => s.toUpperCase()));
   const inWatchlist = (s: string) => watch.has(s.toUpperCase());
+  const byWatchlist = (a: string, b: string) =>
+    Number(inWatchlist(b)) - Number(inWatchlist(a));
   // Watchlist symbols sort first so "this touches MY symbols" survives the +N cut.
-  const symbols = [...item.tickers, ...(item.pairs ?? [])].sort(
-    (a, b) => Number(inWatchlist(b)) - Number(inWatchlist(a)),
-  );
+  const direct = [...getDirectTickers(item), ...(item.pairs ?? [])].sort(byWatchlist);
+  const correlated = [...getCorrelatedTickers(item)].sort(byWatchlist);
+  // Dense row: direct chips lead (strong), correlated fill remaining slots (muted).
+  const rowDirect = direct.slice(0, 3);
+  const rowCorrelated = correlated.slice(0, Math.max(0, 4 - rowDirect.length));
+  const overflow = direct.length + correlated.length - rowDirect.length - rowCorrelated.length;
 
   return (
     <li className="border-b border-ink-800/70">
@@ -62,13 +68,14 @@ export default function NewsRow({
           {item.headline}
         </span>
         <span className="hidden shrink-0 items-center gap-1 md:flex">
-          {symbols.slice(0, 3).map((s) => (
+          {rowDirect.map((s) => (
             <TickerChip key={s} symbol={s} inWatchlist={inWatchlist(s)} />
           ))}
-          {symbols.length > 3 && (
-            <span className="font-mono text-2xs text-text-low">
-              +{symbols.length - 3}
-            </span>
+          {rowCorrelated.map((s) => (
+            <TickerChip key={s} symbol={s} inWatchlist={inWatchlist(s)} variant="correlated" />
+          ))}
+          {overflow > 0 && (
+            <span className="font-mono text-2xs text-text-low">+{overflow}</span>
           )}
         </span>
         <JournalButton item={item} />
@@ -99,9 +106,22 @@ export default function NewsRow({
             {item.marketReaction?.map((r) => (
               <ReactionChip key={r.instrument} reaction={r} />
             ))}
-            {symbols.map((s) => (
+            {direct.map((s) => (
               <TickerChip key={s} symbol={s} inWatchlist={inWatchlist(s)} />
             ))}
+            {correlated.length > 0 && (
+              <span className="ml-1 flex items-center gap-1">
+                <span className="font-mono text-2xs text-text-low">via correlation</span>
+                {correlated.map((s) => (
+                  <TickerChip
+                    key={s}
+                    symbol={s}
+                    inWatchlist={inWatchlist(s)}
+                    variant="correlated"
+                  />
+                ))}
+              </span>
+            )}
           </div>
           <div className="mt-2 flex items-center gap-3">
             {item.url && (

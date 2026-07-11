@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { NewsItem } from "@/lib/news/types";
+import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import type { JournalEntry, JournalFolder } from "@/lib/journal";
 import { folderSummary, journalProvider } from "@/lib/journal";
 import { dateTimeStamp, shortDate } from "@/lib/time";
@@ -152,9 +153,12 @@ function EntryRow({
                   {entry.item.body}
                 </p>
               )}
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {entry.item.tickers.map((t) => (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {getDirectTickers(entry.item).map((t) => (
                   <TickerChip key={t} symbol={t} />
+                ))}
+                {getCorrelatedTickers(entry.item).map((t) => (
+                  <TickerChip key={t} symbol={t} variant="correlated" />
                 ))}
               </div>
               <div

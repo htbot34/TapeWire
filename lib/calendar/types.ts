@@ -46,7 +46,8 @@ export function calendarEventToNewsItem(e: CalendarEvent): NewsItem {
     sourceType: "econ-calendar",
     timestamp: e.timestamp,
     impact: e.impact,
-    tickers: e.tickers ?? [],
+    directTickers: e.tickers ?? [],
+    correlatedTickers: [],
     assetClasses: e.assetClasses,
     eventType: e.eventType,
     body: `${upcoming ? "Scheduled release" : "Released"} · ${e.currency}${

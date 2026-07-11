@@ -10,8 +10,16 @@ const BRIEFING_MAX_AGE_MS = 16 * 60 * 60 * 1000;
 
 function matchesWatchlist(item: NewsItem, filters: UserFilters): boolean {
   const watch = new Set(filters.watchlist.map((s) => s.toUpperCase()));
-  if (item.tickers.some((t) => watch.has(t.toUpperCase()))) return true;
+  if (item.directTickers.some((t) => watch.has(t.toUpperCase()))) return true;
   if (item.pairs?.some((p) => watch.has(p.toUpperCase()))) return true;
+  // Correlated exposure only matches on Critical items — otherwise every
+  // macro headline correlates with everything and the filter means nothing.
+  if (
+    item.impact === "high" &&
+    item.correlatedTickers.some((t) => watch.has(t.toUpperCase()))
+  ) {
+    return true;
+  }
   // Broad macro items (Fed, CPI…) tagged to an asset class the user trades
   // still belong on a personalized tape even without a symbol match.
   if (
@@ -30,9 +38,13 @@ function applyFilters(items: NewsItem[], filters: UserFilters): NewsItem[] {
     if (filters.eventTypes?.length && !filters.eventTypes.includes(item.eventType)) return false;
     if (filters.symbols?.length) {
       const wanted = new Set(filters.symbols.map((s) => s.toUpperCase()));
+      // Same rule as the watchlist gate: direct always, correlated only on
+      // Critical items.
       const hit =
-        item.tickers.some((t) => wanted.has(t.toUpperCase())) ||
-        item.pairs?.some((p) => wanted.has(p.toUpperCase()));
+        item.directTickers.some((t) => wanted.has(t.toUpperCase())) ||
+        item.pairs?.some((p) => wanted.has(p.toUpperCase())) ||
+        (item.impact === "high" &&
+          item.correlatedTickers.some((t) => wanted.has(t.toUpperCase())));
       if (!hit) return false;
     }
     if (filters.sourceNames?.length || filters.sourceTypes?.length) {
