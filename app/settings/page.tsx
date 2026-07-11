@@ -77,7 +77,14 @@ function Section({
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { resetAll, proInterestEmail, breakingAudio, toggleBreakingAudio } = usePrefs();
+  const {
+    resetAll,
+    proInterestEmail,
+    breakingAudio,
+    toggleBreakingAudio,
+    focusAlertMode,
+    toggleFocusAlertMode,
+  } = usePrefs();
   const [proOpen, setProOpen] = useState(false);
 
   return (
@@ -102,6 +109,19 @@ export default function SettingsPage() {
           <label className="flex cursor-pointer items-center gap-2.5">
             <input
               type="checkbox"
+              checked={focusAlertMode}
+              onChange={toggleFocusAlertMode}
+              className="h-3.5 w-3.5 accent-[#4fb8a6]"
+            />
+            <span className="text-sm text-text-hi">Focus Alert mode</span>
+          </label>
+          <p className="mt-1.5 text-2xs text-text-low">
+            When on, Critical events use the full banner takeover. When off,
+            they use the readable two-line alert. Try both with the ⚡ button.
+          </p>
+          <label className="mt-4 flex cursor-pointer items-center gap-2.5">
+            <input
+              type="checkbox"
               checked={breakingAudio}
               onChange={toggleBreakingAudio}
               className="h-3.5 w-3.5 accent-[#4fb8a6]"
@@ -111,9 +131,9 @@ export default function SettingsPage() {
             </span>
           </label>
           <p className="mt-1.5 text-2xs text-text-low">
-            A short squawk-style blip when a breaking headline takes over the
-            banner. Browsers only allow sound after you&apos;ve interacted with
-            the page.
+            A short squawk-style blip when a breaking headline hits the banner
+            — applies in both alert modes. Browsers only allow sound after
+            you&apos;ve interacted with the page.
           </p>
         </Section>
 

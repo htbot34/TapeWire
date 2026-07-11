@@ -56,6 +56,11 @@ interface PrefsState {
   proInterestEmail: string | null;
   /** Audio tick on breaking alerts. Off by default — traders opt in. */
   breakingAudio: boolean;
+  /**
+   * Focus Alert mode: when ON, Critical events use the full-takeover banner
+   * treatment; when OFF (default) they use the readable two-line format.
+   */
+  focusAlertMode: boolean;
   _hasHydrated: boolean;
 
   setOnboarded: (v: boolean) => void;
@@ -67,6 +72,7 @@ interface PrefsState {
   removeSource: (id: string) => void;
   setProInterestEmail: (email: string) => void;
   toggleBreakingAudio: () => void;
+  toggleFocusAlertMode: () => void;
   applyDefaults: () => void;
   resetAll: () => void;
   setHasHydrated: (v: boolean) => void;
@@ -81,6 +87,7 @@ export const usePrefs = create<PrefsState>()(
       sources: DEFAULT_SOURCES,
       proInterestEmail: null,
       breakingAudio: false,
+      focusAlertMode: false,
       _hasHydrated: false,
 
       setOnboarded: (v) => set({ onboarded: v }),
@@ -116,6 +123,7 @@ export const usePrefs = create<PrefsState>()(
         set((s) => ({ sources: s.sources.filter((src) => src.id !== id) })),
       setProInterestEmail: (email) => set({ proInterestEmail: email }),
       toggleBreakingAudio: () => set((s) => ({ breakingAudio: !s.breakingAudio })),
+      toggleFocusAlertMode: () => set((s) => ({ focusAlertMode: !s.focusAlertMode })),
       applyDefaults: () =>
         set({
           assetClasses: DEFAULT_ASSET_CLASSES,
@@ -131,6 +139,7 @@ export const usePrefs = create<PrefsState>()(
           sources: DEFAULT_SOURCES,
           proInterestEmail: null,
           breakingAudio: false,
+          focusAlertMode: false,
         }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
@@ -146,6 +155,7 @@ export const usePrefs = create<PrefsState>()(
         sources: s.sources,
         proInterestEmail: s.proInterestEmail,
         breakingAudio: s.breakingAudio,
+        focusAlertMode: s.focusAlertMode,
       }),
     },
   ),
