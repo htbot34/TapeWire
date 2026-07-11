@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import ProModal from "@/components/ProModal";
@@ -9,7 +9,54 @@ import {
   SourcesEditor,
   WatchlistEditor,
 } from "@/components/prefs-editors";
+import type { FeedbackKind } from "@/lib/feedback";
+import { FEEDBACK_KINDS, FEEDBACK_LABEL, feedbackProvider } from "@/lib/feedback";
 import { usePrefs } from "@/lib/store";
+
+function FeedbackSection() {
+  const [counts, setCounts] = useState<Record<FeedbackKind, number> | null>(null);
+
+  useEffect(() => {
+    const refresh = () =>
+      feedbackProvider.getAll().then((records) => {
+        const next = { useful: 0, "not-relevant": 0, "wrong-asset": 0, "wrong-catalyst": 0 };
+        for (const r of records) next[r.kind] += 1;
+        setCounts(next);
+      });
+    refresh();
+    return feedbackProvider.subscribe(refresh);
+  }, []);
+
+  const total = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0;
+
+  return (
+    <>
+      <p className="text-sm text-text-mid">
+        Relevance judgments you&apos;ve given via the ⋯ control on feed and
+        briefing rows. Nothing consumes this yet — in production it trains
+        your personal ranking.
+      </p>
+      {counts && (
+        <ul className="mt-3 space-y-1">
+          {FEEDBACK_KINDS.map((kind) => (
+            <li key={kind} className="flex items-baseline gap-2 font-mono text-xs">
+              <span className="text-text-mid">{FEEDBACK_LABEL[kind]}</span>
+              <span className="flex-1 border-b border-dotted border-ink-700" />
+              <span className="tnum text-text-hi">{counts[kind]}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button
+        onClick={() => feedbackProvider.clearAll()}
+        disabled={total === 0}
+        className="mt-3 border border-ink-700 px-4 py-2 text-sm text-text-mid hover:border-impact-high hover:text-impact-high/90 disabled:opacity-40"
+      >
+        Clear all feedback
+      </button>
+    </>
+  );
+}
 
 function Section({
   title,
@@ -68,6 +115,10 @@ export default function SettingsPage() {
             banner. Browsers only allow sound after you&apos;ve interacted with
             the page.
           </p>
+        </Section>
+
+        <Section title="Your feedback">
+          <FeedbackSection />
         </Section>
 
         <Section title="TapeWire Pro">

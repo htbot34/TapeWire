@@ -15,6 +15,7 @@ import {
   TickerChip,
 } from "./atoms";
 import ExplainerPanel from "./ExplainerPanel";
+import FeedbackControl from "./FeedbackControl";
 import JournalButton from "./JournalButton";
 
 function useWatchlistCheck() {
@@ -104,6 +105,7 @@ function TopItem({
           </div>
         </div>
         <span className="flex shrink-0 items-center gap-1.5">
+          <FeedbackControl item={item} />
           <JournalButton item={item} />
           <button
             onClick={(e) => {
@@ -192,6 +194,7 @@ function CompactItem({
         <span className="min-w-0 flex-1 truncate text-[13px] text-text-mid">
           {item.headline}
         </span>
+        <FeedbackControl item={item} />
         <JournalButton item={item} />
         <button
           onClick={(e) => {

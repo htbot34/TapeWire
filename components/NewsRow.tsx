@@ -14,6 +14,7 @@ import {
   SourceTag,
   TickerChip,
 } from "./atoms";
+import FeedbackControl from "./FeedbackControl";
 import JournalButton from "./JournalButton";
 
 /**
@@ -86,6 +87,7 @@ export default function NewsRow({
             <span className="font-mono text-2xs text-text-low">+{overflow}</span>
           )}
         </span>
+        <FeedbackControl item={item} />
         <JournalButton item={item} />
         <button
           onClick={(e) => {

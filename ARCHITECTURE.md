@@ -45,6 +45,12 @@ The prototype is structured so that swapping mock data for real feeds touches
   save time so entries survive independently of feed retention. Folder
   summaries (`summary.ts`) are computed strictly from user-recorded
   reactions — counts and averages, nothing invented.
+- `lib/feedback/` — `FeedbackProvider` stores per-item relevance judgments
+  (Useful · Not relevant · Wrong asset mapping · Wrong catalyst) from the ⋯
+  control on feed/briefing rows. **Nothing consumes this data yet by
+  design** — it is the training input for the production ranking engine
+  (see the ranking-engine roadmap below); the prototype captures it to
+  validate that traders will actually provide it.
 - User preferences live in a Zustand store persisted to localStorage
   (`lib/store.ts`); providers receive them as `UserFilters` per call and stay
   stateless with respect to the user.
