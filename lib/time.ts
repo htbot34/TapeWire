@@ -44,6 +44,21 @@ export function dateTimeStamp(iso: string): string {
   return `${shortDate(iso)} · ${shortTime(iso)}`;
 }
 
+/** "14:32:07" from ISO timestamp, local time, seconds included. */
+export function exactTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
+
+/** "Jul 10 · 14:32:07" — the to-the-second stamp for raw-event headers. */
+export function exactDateTimeStamp(iso: string): string {
+  return `${shortDate(iso)} · ${exactTime(iso)}`;
+}
+
 /** Local timezone abbreviation, e.g. "EST", "GMT+2" — for the calendar header. */
 export function tzLabel(d: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat([], { timeZoneName: "short" }).formatToParts(d);

@@ -5,8 +5,13 @@ import type { NewsItem } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 import { historicalEventProvider } from "@/lib/history";
 import { usePrefs } from "@/lib/store";
-import { dateTimeStamp } from "@/lib/time";
+import { exactDateTimeStamp, tzLabel } from "@/lib/time";
 import { mockExplanation } from "@/lib/explainFallback";
+import {
+  isUnstructured,
+  parseExplainSections,
+  type ExplainSections,
+} from "@/lib/explainSections";
 import { TickerChip } from "./atoms";
 
 type Status = "loading" | "streaming" | "done" | "error";
@@ -28,78 +33,77 @@ function MoveText({ instrument, move }: { instrument: string; move: string }) {
   );
 }
 
-/**
- * Structured facts first — definition, affected symbols, historical
- * reactions from the curated dataset (never LLM-generated) — then the AI
- * conversation below. No dataset → no table; the AI section stands alone.
- */
-function HistoricalFacts({
-  history,
-  watchlist,
-}: {
-  history: HistoricalEventContext;
-  watchlist: string[];
-}) {
-  const watch = new Set(watchlist.map((s) => s.toUpperCase()));
+/** Quiet section label — the panel's structure should whisper, not shout. */
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="border-b border-ink-800 px-4 py-3">
-      <div className="font-mono text-2xs uppercase tracking-[0.2em] text-text-low">
-        What it is
-      </div>
-      <p className="mt-1 text-xs leading-relaxed text-text-hi">
-        <span className="font-medium">{history.name}.</span> {history.definition}
-      </p>
-
-      <div className="mt-2.5 font-mono text-2xs uppercase tracking-[0.2em] text-text-low">
-        Affects
-      </div>
-      <div className="mt-1 flex flex-wrap gap-1">
-        {history.symbols.map((s) => (
-          <TickerChip key={s} symbol={s} inWatchlist={watch.has(s.toUpperCase())} />
-        ))}
-      </div>
-
-      <div className="mt-2.5 font-mono text-2xs uppercase tracking-[0.2em] text-text-low">
-        Historical reactions
-      </div>
-      <div className="mt-1">
-        {history.occurrences.map((o, i) => (
-          <div
-            key={o.date}
-            className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-b border-ink-800/50 py-1 ${
-              i === 0 ? "border-l-2 border-l-phos bg-phos-faint/40 pl-2" : "pl-2.5"
-            }`}
-          >
-            <span className="tnum w-[74px] shrink-0 font-mono text-2xs text-text-hi">
-              {o.date}
-            </span>
-            {i === 0 && (
-              <span className="shrink-0 rounded-sm bg-phos/20 px-1 font-mono text-2xs font-semibold uppercase text-phos">
-                last
-              </span>
-            )}
-            <span className="tnum min-w-0 font-mono text-2xs text-text-mid">
-              {o.actual
-                ? `${o.actual}${o.consensus ? ` vs ${o.consensus} exp` : ""}`
-                : ""}
-              {o.surprise ? ` (${o.surprise})` : ""}
-            </span>
-            <span className="ml-auto flex shrink-0 flex-wrap justify-end gap-x-2">
-              {o.reactions.map((r) => (
-                <MoveText key={r.instrument} instrument={r.instrument} move={r.move} />
-              ))}
-            </span>
-          </div>
-        ))}
-      </div>
-      <p className="mt-1.5 text-2xs text-text-low">
-        Curated dataset — mock data in the prototype; production uses a real
-        historical events database.
-      </p>
+    <div className="font-mono text-2xs uppercase tracking-[0.2em] text-text-low">
+      {children}
     </div>
   );
 }
 
+function AiText({ text }: { text: string }) {
+  return (
+    <div className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-text-hi">
+      {text}
+    </div>
+  );
+}
+
+function AiSkeleton() {
+  return (
+    <div className="mt-1 space-y-2" aria-label="Loading">
+      <div className="skeleton h-3 w-11/12" />
+      <div className="skeleton h-3 w-4/5" />
+    </div>
+  );
+}
+
+function HistoricalTable({ history }: { history: HistoricalEventContext }) {
+  return (
+    <div className="mt-1">
+      {history.occurrences.map((o, i) => (
+        <div
+          key={o.date}
+          className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-b border-ink-800/50 py-1 ${
+            i === 0 ? "border-l-2 border-l-phos bg-phos-faint/40 pl-2" : "pl-2.5"
+          }`}
+        >
+          <span className="tnum w-[74px] shrink-0 font-mono text-2xs text-text-hi">
+            {o.date}
+          </span>
+          {i === 0 && (
+            <span className="shrink-0 rounded-sm bg-phos/20 px-1 font-mono text-2xs font-semibold uppercase text-phos">
+              last
+            </span>
+          )}
+          <span className="tnum min-w-0 font-mono text-2xs text-text-mid">
+            {o.actual
+              ? `${o.actual}${o.consensus ? ` vs ${o.consensus} exp` : ""}`
+              : ""}
+            {o.surprise ? ` (${o.surprise})` : ""}
+          </span>
+          <span className="ml-auto flex shrink-0 flex-wrap justify-end gap-x-2">
+            {o.reactions.map((r) => (
+              <MoveText key={r.instrument} instrument={r.instrument} move={r.move} />
+            ))}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The Explain panel. Fixed section order (see the v3 spec):
+ *   1 Raw event · 2 What it is · 3 Why markets care · 4 Instruments affected
+ *   · 5 Observed reaction · 6 What traders may monitor next · 7 Historical
+ *   reactions · 8 Sources · 9 Confidence & limitations · 10 Chat.
+ * Sections 3 and 6 (and 2 when the event database has no definition) come
+ * from the AI reply, parsed defensively — an unlabeled reply renders under a
+ * single "Context" section instead of breaking. Structured facts (chips,
+ * reactions, the historical table) never come from the model.
+ */
 export default function ExplainerPanel({
   item,
   onClose,
@@ -182,9 +186,9 @@ export default function ExplainerPanel({
   }, [onClose]);
 
   useEffect(() => {
-    // Follow the thread only once a conversation is underway — scrolling on
-    // the initial explanation would yank the facts section out of view.
-    if (messages.length > 1 || (messages.length === 1 && streamingText)) {
+    // Follow the thread only once a follow-up conversation is underway —
+    // scrolling on the initial explanation would yank the sections out of view.
+    if (messages.length > 1) {
       threadEndRef.current?.scrollIntoView({ block: "end" });
     }
   }, [messages, streamingText]);
@@ -200,6 +204,39 @@ export default function ExplainerPanel({
     request(thread);
   };
 
+  // The first assistant message is the initial explanation, distributed into
+  // the panel's sections; everything after it is the follow-up chat thread.
+  const initialText =
+    messages[0]?.role === "assistant"
+      ? messages[0].content
+      : status === "streaming" && messages.length === 0
+        ? streamingText
+        : "";
+  const initialLoading = messages.length === 0 && status === "loading";
+  const initialError = messages.length === 0 && status === "error";
+  const sections: ExplainSections = parseExplainSections(initialText);
+  const unstructured = initialText !== "" && isUnstructured(sections);
+  const chat = messages.slice(1);
+  const followUpStreaming = status === "streaming" && messages.length > 0;
+
+  const watch = new Set(watchlist.map((s) => s.toUpperCase()));
+  const symbols = Array.from(
+    new Set([
+      ...item.tickers,
+      ...(item.pairs ?? []),
+      ...(history?.symbols ?? []),
+    ]),
+  );
+
+  const aiSlot = (text: string | undefined) =>
+    text ? (
+      <AiText text={text} />
+    ) : initialLoading || (status === "streaming" && messages.length === 0) ? (
+      <AiSkeleton />
+    ) : (
+      <p className="mt-1 text-2xs text-text-low">—</p>
+    );
+
   return (
     <>
       {/* click-away scrim */}
@@ -210,94 +247,221 @@ export default function ExplainerPanel({
                    inset-x-0 bottom-0 max-h-[80vh] border-t
                    md:inset-y-0 md:left-auto md:right-0 md:h-full md:max-h-none md:w-[440px] md:border-l md:border-t-0"
         role="dialog"
-        aria-label="Explainer"
+        aria-label="Explain"
       >
+        {/* ── 1 · Raw event ─────────────────────────────────────────────── */}
         <div className="flex items-start gap-3 border-b border-ink-800 px-4 py-3">
           <div className="min-w-0 flex-1">
-            <div className="font-mono text-2xs uppercase tracking-[0.2em] text-phos">
-              What does this mean?
-            </div>
-            <p className="mt-1 line-clamp-3 text-xs leading-snug text-text-mid">
+            <SectionLabel>Raw event</SectionLabel>
+            <p className="mt-1 text-[13px] font-medium leading-snug text-text-hi">
               {item.headline}
             </p>
-            <div className="tnum mt-1 font-mono text-2xs text-text-low">
-              {dateTimeStamp(item.timestamp)} · {item.source}
+            <div className="tnum mt-1 font-mono text-2xs text-text-mid">
+              {item.source} · {exactDateTimeStamp(item.timestamp)} {tzLabel()}
             </div>
           </div>
           <button
             onClick={onClose}
             className="shrink-0 p-1 font-mono text-text-low hover:text-text-hi"
-            aria-label="Close explainer"
+            aria-label="Close Explain panel"
           >
             ✕
           </button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {history && <HistoricalFacts history={history} watchlist={watchlist} />}
+          {/* ── 2 · What it is ──────────────────────────────────────────── */}
+          <div className="border-b border-ink-800/60 px-4 py-3">
+            <SectionLabel>What it is</SectionLabel>
+            {history ? (
+              <p className="mt-1 text-xs leading-relaxed text-text-hi">
+                <span className="font-medium">{history.name}.</span>{" "}
+                {history.definition}
+              </p>
+            ) : (
+              aiSlot(sections.whatItIs)
+            )}
+          </div>
 
-          <div className="px-4 py-3">
-            <div className="font-mono text-2xs uppercase tracking-[0.2em] text-text-low">
-              AI explainer
+          {initialError ? (
+            <div className="border-b border-ink-800/60 px-4 py-3">
+              <div className="border border-impact-high/30 bg-impact-high/5 p-3">
+                <p className="text-sm text-text-hi">
+                  Couldn&apos;t get an explanation.
+                </p>
+                <p className="mt-1 text-xs text-text-mid">
+                  The explainer service didn&apos;t respond. The raw headline
+                  above is unaffected.
+                </p>
+                <button
+                  onClick={() => request(messages)}
+                  className="mt-3 border border-phos/50 bg-phos-faint px-3 py-1.5 text-xs font-medium text-phos hover:border-phos"
+                >
+                  Retry
+                </button>
+              </div>
             </div>
+          ) : unstructured ? (
+            /* Defensive path: unlabeled reply → one "Context" section. */
+            <div className="border-b border-ink-800/60 px-4 py-3">
+              <SectionLabel>Context</SectionLabel>
+              <AiText text={sections.context ?? initialText} />
+            </div>
+          ) : (
+            /* ── 3 · Why markets care ──────────────────────────────────── */
+            <div className="border-b border-ink-800/60 px-4 py-3">
+              <SectionLabel>Why markets care</SectionLabel>
+              {aiSlot(sections.whyMarketsCare)}
+            </div>
+          )}
 
-            <div className="mt-2 space-y-3">
-              {messages.map((m, i) =>
-                m.role === "user" ? (
-                  <p
-                    key={i}
-                    className="border-l-2 border-phos/40 pl-2 text-[13px] leading-relaxed text-phos/90"
-                  >
-                    {m.content}
-                  </p>
-                ) : (
-                  <div
-                    key={i}
-                    className="whitespace-pre-wrap text-[13px] leading-relaxed text-text-hi"
-                  >
-                    {m.content}
+          {/* ── 4 · Instruments affected ────────────────────────────────── */}
+          <div className="border-b border-ink-800/60 px-4 py-3">
+            <SectionLabel>Instruments affected</SectionLabel>
+            {symbols.length ? (
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {symbols.map((s) => (
+                  <TickerChip key={s} symbol={s} inWatchlist={watch.has(s.toUpperCase())} />
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1 text-2xs text-text-low">
+                No instruments tagged on this item.
+              </p>
+            )}
+          </div>
+
+          {/* ── 5 · Observed reaction ───────────────────────────────────── */}
+          <div className="border-b border-ink-800/60 px-4 py-3">
+            <SectionLabel>Observed reaction</SectionLabel>
+            {item.marketReaction?.length ? (
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                {item.marketReaction.map((r) => (
+                  <MoveText key={r.instrument} instrument={r.instrument} move={r.move} />
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1 text-2xs text-text-low">
+                No market reaction recorded on this item.
+              </p>
+            )}
+            {!unstructured && sections.observedReaction && (
+              <AiText text={sections.observedReaction} />
+            )}
+          </div>
+
+          {/* ── 6 · What traders may monitor next ───────────────────────── */}
+          {!unstructured && !initialError && (
+            <div className="border-b border-ink-800/60 px-4 py-3">
+              <SectionLabel>What traders may monitor next</SectionLabel>
+              {aiSlot(sections.monitorNext)}
+            </div>
+          )}
+
+          {/* ── 7 · Historical reactions ────────────────────────────────── */}
+          {history && (
+            <div className="border-b border-ink-800/60 px-4 py-3">
+              <SectionLabel>Historical reactions</SectionLabel>
+              <HistoricalTable history={history} />
+              <p className="mt-1.5 text-2xs text-text-low">
+                Curated dataset — mock data in the prototype; production uses a
+                real historical events database.
+              </p>
+            </div>
+          )}
+
+          {/* ── 8 · Sources ─────────────────────────────────────────────── */}
+          <div className="border-b border-ink-800/60 px-4 py-3">
+            <SectionLabel>Sources</SectionLabel>
+            <div className="mt-1 space-y-0.5">
+              {item.url ? (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-2xs text-phos/80 underline decoration-phos/30 hover:text-phos"
+                  title={item.url}
+                >
+                  {item.source} — original source →
+                </a>
+              ) : (
+                <p className="font-mono text-2xs text-text-mid">{item.source}</p>
+              )}
+              {history && (
+                <p className="text-2xs text-text-low">
+                  Definition &amp; historical table: TapeWire event database.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* ── 9 · Confidence & limitations ────────────────────────────── */}
+          <div className="border-b border-ink-800/60 px-4 py-3">
+            <SectionLabel>Confidence &amp; limitations</SectionLabel>
+            <p className="mt-1 text-2xs leading-relaxed text-text-mid">
+              Definition and historical table come from TapeWire&apos;s event
+              database{history ? "" : " (no coverage for this event type)"}.
+              AI commentary is model-generated context — labeled fact vs.
+              inference, but it may be incomplete. All data in this prototype
+              is mock.
+            </p>
+            {sections.footer.length > 0 && (
+              <p className="mt-1 font-mono text-2xs text-text-low">
+                {sections.footer.join(" · ")}
+              </p>
+            )}
+          </div>
+
+          {/* ── 10 · Follow-up chat thread ──────────────────────────────── */}
+          {(chat.length > 0 || followUpStreaming) && (
+            <div className="px-4 py-3">
+              <SectionLabel>Follow-ups</SectionLabel>
+              <div className="mt-2 space-y-3">
+                {chat.map((m, i) =>
+                  m.role === "user" ? (
+                    <p
+                      key={i}
+                      className="border-l-2 border-phos/40 pl-2 text-[13px] leading-relaxed text-phos/90"
+                    >
+                      {m.content}
+                    </p>
+                  ) : (
+                    <div
+                      key={i}
+                      className="whitespace-pre-wrap text-[13px] leading-relaxed text-text-hi"
+                    >
+                      {m.content}
+                    </div>
+                  ),
+                )}
+                {followUpStreaming && (
+                  <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-text-hi">
+                    {streamingText}
+                    <span className="ml-0.5 inline-block h-3.5 w-[7px] translate-y-0.5 bg-phos/70" />
                   </div>
-                ),
-              )}
-
-              {status === "streaming" && (
-                <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-text-hi">
-                  {streamingText}
-                  <span className="ml-0.5 inline-block h-3.5 w-[7px] translate-y-0.5 bg-phos/70" />
-                </div>
-              )}
-
-              {status === "loading" && (
-                <div className="space-y-2.5" aria-label="Loading explanation">
-                  <div className="skeleton h-3 w-11/12" />
-                  <div className="skeleton h-3 w-full" />
-                  <div className="skeleton h-3 w-4/5" />
-                  <div className="mt-3 font-mono text-2xs text-text-low">
+                )}
+                {status === "loading" && messages.length > 0 && (
+                  <div className="font-mono text-2xs text-text-low">
                     Asking the model…
                   </div>
-                </div>
-              )}
-
-              {status === "error" && (
-                <div className="border border-impact-high/30 bg-impact-high/5 p-3">
-                  <p className="text-sm text-text-hi">
-                    Couldn&apos;t get an explanation.
-                  </p>
-                  <p className="mt-1 text-xs text-text-mid">
-                    The explainer service didn&apos;t respond. The raw headline
-                    above is unaffected.
-                  </p>
-                  <button
-                    onClick={() => request(messages)}
-                    className="mt-3 border border-phos/50 bg-phos-faint px-3 py-1.5 text-xs font-medium text-phos hover:border-phos"
-                  >
-                    Retry
-                  </button>
-                </div>
-              )}
+                )}
+                {status === "error" && messages.length > 0 && (
+                  <div className="border border-impact-high/30 bg-impact-high/5 p-2.5">
+                    <p className="text-xs text-text-mid">
+                      No reply — the explainer service didn&apos;t respond.
+                    </p>
+                    <button
+                      onClick={() => request(messages)}
+                      className="mt-2 border border-phos/50 bg-phos-faint px-2.5 py-1 text-xs font-medium text-phos hover:border-phos"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div ref={threadEndRef} />
             </div>
-            <div ref={threadEndRef} />
-          </div>
+          )}
         </div>
 
         <div className="border-t border-ink-800 px-4 py-2.5">

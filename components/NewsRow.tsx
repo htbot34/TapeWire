@@ -77,11 +77,11 @@ export default function NewsRow({
             e.stopPropagation();
             onExplain(item);
           }}
-          className="shrink-0 rounded-sm border border-ink-700 px-1.5 font-mono text-2xs text-text-low opacity-70 hover:border-phos hover:text-phos group-hover:opacity-100"
-          title="What does this mean? (AI)"
+          className="shrink-0 rounded-sm border border-ink-700 px-1.5 font-mono text-2xs uppercase tracking-wide text-text-low opacity-70 hover:border-phos hover:text-phos group-hover:opacity-100"
+          title="Intelligence about this event — definition, history, AI context"
           aria-label={`Explain: ${item.headline}`}
         >
-          ?
+          Explain
         </button>
       </div>
 
@@ -118,9 +118,9 @@ export default function NewsRow({
             )}
             <button
               onClick={() => onExplain(item)}
-              className="font-mono text-2xs text-text-low hover:text-phos"
+              className="font-mono text-2xs uppercase tracking-wide text-text-low hover:text-phos"
             >
-              ? explain
+              Explain
             </button>
           </div>
         </div>

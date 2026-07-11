@@ -166,7 +166,7 @@ export default function CalendarView() {
           <span className="hidden w-20 shrink-0 text-right sm:inline">Actual</span>
           <span className="hidden w-20 shrink-0 text-right sm:inline">Forecast</span>
           <span className="hidden w-20 shrink-0 text-right md:inline">Previous</span>
-          <span className="w-6 shrink-0" />
+          <span className="w-[60px] shrink-0" />
         </div>
 
         {events === null ? (
@@ -244,14 +244,14 @@ export default function CalendarView() {
                     <span className="tnum hidden w-20 shrink-0 text-right font-mono text-2xs text-text-low md:inline">
                       {e.previous ?? "—"}
                     </span>
-                    <span className="w-6 shrink-0 text-right">
+                    <span className="w-[60px] shrink-0 text-right">
                       <button
                         onClick={() => setExplaining(calendarEventToNewsItem(e))}
-                        className="rounded-sm border border-ink-700 px-1.5 font-mono text-2xs text-text-low hover:border-phos hover:text-phos"
-                        title="What is this event? (AI + history)"
+                        className="rounded-sm border border-ink-700 px-1.5 font-mono text-2xs uppercase tracking-wide text-text-low hover:border-phos hover:text-phos"
+                        title="Intelligence about this event — definition, history, AI context"
                         aria-label={`Explain: ${e.name}`}
                       >
-                        ?
+                        Explain
                       </button>
                     </span>
                   </div>

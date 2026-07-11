@@ -38,22 +38,31 @@ export function mockExplanation(
 
   const last = history?.occurrences[0];
   const lastLine = last
-    ? `Last recorded ${history!.name}: ${last.date}${
+    ? `Fact: the last recorded ${history!.name} was ${last.date}${
         last.actual ? ` · ${last.actual}${last.consensus ? ` vs ${last.consensus} exp` : ""}` : ""
-      } · ${last.reactions.map((r) => `${r.instrument} ${r.move}`).join(", ")} — see the Historical reactions table above.`
+      } · ${last.reactions.map((r) => `${r.instrument} ${r.move}`).join(", ")} — see the Historical reactions table.`
     : null;
 
+  // Same labeled-section format the live prompt requires, so the panel's
+  // section parser is exercised on the canned path too.
   return [
+    `WHAT IT IS:`,
     `${eventBlurb[item.eventType] ?? eventBlurb.other}`,
     ``,
-    `${item.body ?? item.headline}`,
-    ``,
+    `WHY MARKETS CARE:`,
+    `Fact: ${item.body ?? item.headline}`,
     watchHits.length
-      ? `Watchlist relevance: this item is tagged to ${watchHits.join(", ")} on your watchlist${reaction ? ` — the initial reaction was ${reaction}` : ""}.`
-      : `Watchlist relevance: none of your watchlist symbols are tagged directly${symbols.length ? `, though ${symbols.join(", ")} moved on it` : ""}.`,
+      ? `Fact: this item is tagged to ${watchHits.join(", ")} on your watchlist.`
+      : `Fact: none of your watchlist symbols are tagged directly${symbols.length ? ` (tagged: ${symbols.join(", ")})` : ""}.`,
     ``,
-    ...(lastLine ? [lastLine, ``] : []),
-    `What traders typically watch next: wire-service follow-ups or official confirmation, the reaction in the most-affected instruments${reaction ? ` (${reaction})` : ""}, and whether the move holds or fades over the following sessions.`,
+    `OBSERVED REACTION:`,
+    reaction
+      ? `Fact: the recorded reaction was ${reaction}. Inference: traders typically compare a first reaction like this against how the same event type resolved historically before treating it as durable.`
+      : `Fact: no market reaction is recorded on this item yet.`,
+    ``,
+    `WHAT TRADERS MAY MONITOR NEXT:`,
+    ...(lastLine ? [lastLine] : []),
+    `Inference: traders typically watch wire-service follow-ups or official confirmation, the reaction in the most-affected instruments${reaction ? ` (${reaction})` : ""}, and whether the move holds or fades over the following sessions.`,
     ``,
     `Context, not financial advice.`,
     ``,

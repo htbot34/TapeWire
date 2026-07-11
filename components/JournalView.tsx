@@ -159,9 +159,9 @@ function EntryRow({
                 )}
                 <button
                   onClick={() => onExplain(entry.item)}
-                  className="font-mono text-2xs text-text-low hover:text-phos"
+                  className="font-mono text-2xs uppercase tracking-wide text-text-low hover:text-phos"
                 >
-                  ? explain
+                  Explain
                 </button>
                 <button
                   onClick={() => setEditing(true)}

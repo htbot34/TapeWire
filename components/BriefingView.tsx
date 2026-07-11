@@ -79,11 +79,11 @@ function TopItem({
               e.stopPropagation();
               onExplain(item);
             }}
-            className="shrink-0 rounded-sm border border-ink-700 px-1.5 font-mono text-2xs text-text-low hover:border-phos hover:text-phos"
-            title="What does this mean? (AI)"
+            className="shrink-0 rounded-sm border border-ink-700 px-1.5 font-mono text-2xs uppercase tracking-wide text-text-low hover:border-phos hover:text-phos"
+            title="Intelligence about this event — definition, history, AI context"
             aria-label={`Explain: ${item.headline}`}
           >
-            ?
+            Explain
           </button>
         </span>
       </div>
@@ -152,10 +152,11 @@ function CompactItem({
             e.stopPropagation();
             onExplain(item);
           }}
-          className="shrink-0 rounded-sm border border-ink-700 px-1.5 font-mono text-2xs text-text-low hover:border-phos hover:text-phos"
+          className="shrink-0 rounded-sm border border-ink-700 px-1.5 font-mono text-2xs uppercase tracking-wide text-text-low hover:border-phos hover:text-phos"
+          title="Intelligence about this event — definition, history, AI context"
           aria-label={`Explain: ${item.headline}`}
         >
-          ?
+          Explain
         </button>
       </div>
       {expanded && (
