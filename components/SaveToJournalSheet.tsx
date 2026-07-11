@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { MarketReaction, NewsItem } from "@/lib/news/types";
-import type { JournalFolder } from "@/lib/journal";
+import { getDirectTickers } from "@/lib/news/types";
+import type { HistoricalEventContext } from "@/lib/history";
+import { historicalEventProvider, historyKeyFor } from "@/lib/history";
+import type { JournalFolder, JournalOutcome } from "@/lib/journal";
 import {
+  OUTCOME_LABEL,
+  SUGGESTED_TAGS,
   folderIdForName,
   journalProvider,
   suggestFolderName,
@@ -12,10 +17,31 @@ import { dateTimeStamp } from "@/lib/time";
 
 const NEW_FOLDER = "__new__";
 
+const OUTCOMES: JournalOutcome[] = ["held", "faded", "mixed"];
+
+/** Default tag suggested from the item (matches the folder suggestion). */
+function suggestTag(item: NewsItem): string | null {
+  switch (suggestFolderName(item)) {
+    case "CPI":
+      return "CPI";
+    case "NFP":
+      return "NFP";
+    case "FOMC":
+      return "FOMC";
+    case "Earnings":
+      return "earnings";
+    case "Geopolitical":
+      return "geopolitics";
+    default:
+      return item.eventType === "company-news" ? "company news" : null;
+  }
+}
+
 /**
- * Compact capture sheet: folder (auto-suggested from the item's event type),
- * recorded market reaction rows (pre-filled from the item, editable), notes.
- * Modal on desktop, bottom sheet on mobile.
+ * Compact capture sheet — the core Replay input. Folder auto-suggested,
+ * reactions pre-filled (with intervals), and the v3 fields are all optional
+ * one-tap toggles: direction, held/faded, tag chips. Saving stays a <10s
+ * action; "observed only" (no trade) is a first-class entry.
  */
 export default function SaveToJournalSheet({
   item,
@@ -35,17 +61,45 @@ export default function SaveToJournalSheet({
       : [{ instrument: "", move: "", interval: "" }],
   );
   const [notes, setNotes] = useState("");
+  const [direction, setDirection] = useState<"long" | "short" | null>(null);
+  const [tradeInstrument, setTradeInstrument] = useState(
+    item.marketReaction?.[0]?.instrument ?? getDirectTickers(item)[0] ?? "",
+  );
+  const [outcome, setOutcome] = useState<JournalOutcome | null>(null);
+  const [tags, setTags] = useState<string[]>(() => {
+    const t = suggestTag(item);
+    return t ? [t] : [];
+  });
+  const [customTag, setCustomTag] = useState("");
+  const [history, setHistory] = useState<HistoricalEventContext | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     journalProvider.listFolders().then(setFolders);
-  }, []);
+    historicalEventProvider.getContext(item).then(setHistory);
+  }, [item]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  const tagOptions = useMemo(() => {
+    const opts = [...SUGGESTED_TAGS] as string[];
+    for (const t of tags) if (!opts.includes(t)) opts.push(t);
+    return opts;
+  }, [tags]);
+
+  const toggleTag = (t: string) =>
+    setTags((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]));
+
+  const addCustomTag = () => {
+    const t = customTag.trim();
+    if (!t) return;
+    if (!tags.includes(t)) setTags((cur) => [...cur, t]);
+    setCustomTag("");
+  };
 
   const setReaction = (i: number, patch: Partial<MarketReaction>) =>
     setReactions((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -63,11 +117,19 @@ export default function SaveToJournalSheet({
         }
         targetId = (await journalProvider.createFolder(name)).id;
       }
+      const historyKey = historyKeyFor(item);
       await journalProvider.saveEntry({
         folderId: targetId,
         item,
         reactions: reactions.filter((r) => r.instrument.trim() && r.move.trim()),
         notes: notes.trim(),
+        trade:
+          direction && tradeInstrument.trim()
+            ? { instrument: tradeInstrument.trim().toUpperCase(), direction }
+            : undefined,
+        outcome: outcome ?? undefined,
+        tags,
+        relatedHistorical: historyKey ? [historyKey] : undefined,
       });
       onClose();
     } finally {
@@ -81,7 +143,7 @@ export default function SaveToJournalSheet({
       <div
         className="fixed z-50 flex max-h-[85vh] flex-col overflow-y-auto border-ink-700 bg-ink-900
                    inset-x-0 bottom-0 border-t
-                   sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:w-[440px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:border"
+                   sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:w-[460px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:border"
         role="dialog"
         aria-label="Save to journal"
       >
@@ -192,6 +254,102 @@ export default function SaveToJournalSheet({
             </button>
           </div>
 
+          {/* What you did — optional; observed-only is valid */}
+          <div>
+            <label className="font-mono text-2xs uppercase tracking-widest text-text-low">
+              What you did <span className="normal-case tracking-normal">(optional)</span>
+            </label>
+            <div className="mt-1.5 flex items-center gap-1.5">
+              {(["long", "short"] as const).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setDirection((cur) => (cur === d ? null : d))}
+                  className={`rounded-sm border px-2.5 py-1 font-mono text-xs uppercase tracking-wider ${
+                    direction === d
+                      ? d === "long"
+                        ? "border-pos/60 bg-pos/10 text-pos"
+                        : "border-neg/60 bg-neg/10 text-neg"
+                      : "border-ink-700 text-text-low hover:text-text-mid"
+                  }`}
+                  aria-pressed={direction === d}
+                >
+                  {d}
+                </button>
+              ))}
+              <input
+                value={tradeInstrument}
+                onChange={(e) => setTradeInstrument(e.target.value.toUpperCase())}
+                placeholder="NQ"
+                disabled={!direction}
+                className="tnum w-24 border border-ink-700 bg-ink-950 px-2 py-1 font-mono text-xs text-text-hi placeholder:text-text-low focus:border-phos focus:outline-none disabled:opacity-40"
+                aria-label="Traded instrument"
+              />
+              {!direction && (
+                <span className="font-mono text-2xs text-text-low">observed only</span>
+              )}
+            </div>
+          </div>
+
+          {/* Outcome — did the move hold or fade */}
+          <div>
+            <label className="font-mono text-2xs uppercase tracking-widest text-text-low">
+              Move outcome <span className="normal-case tracking-normal">(optional)</span>
+            </label>
+            <div className="mt-1.5 flex items-center gap-1.5">
+              {OUTCOMES.map((o) => (
+                <button
+                  key={o}
+                  onClick={() => setOutcome((cur) => (cur === o ? null : o))}
+                  className={`rounded-sm border px-2.5 py-1 font-mono text-xs uppercase tracking-wider ${
+                    outcome === o
+                      ? "border-phos/60 bg-phos-faint text-phos"
+                      : "border-ink-700 text-text-low hover:text-text-mid"
+                  }`}
+                  aria-pressed={outcome === o}
+                >
+                  {OUTCOME_LABEL[o]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="font-mono text-2xs uppercase tracking-widest text-text-low">
+              Tags
+            </label>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {tagOptions.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => toggleTag(t)}
+                  className={`rounded-sm border px-2 py-0.5 font-mono text-2xs ${
+                    tags.includes(t)
+                      ? "border-phos/60 bg-phos-faint text-phos"
+                      : "border-ink-700 text-text-low hover:text-text-mid"
+                  }`}
+                  aria-pressed={tags.includes(t)}
+                >
+                  {t}
+                </button>
+              ))}
+              <input
+                value={customTag}
+                onChange={(e) => setCustomTag(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustomTag();
+                  }
+                }}
+                onBlur={addCustomTag}
+                placeholder="+ tag"
+                className="w-16 border border-ink-700 bg-ink-950 px-1.5 py-0.5 font-mono text-2xs text-text-hi placeholder:text-text-low focus:border-phos focus:outline-none"
+                aria-label="Add custom tag"
+              />
+            </div>
+          </div>
+
           {/* Notes */}
           <div>
             <label className="font-mono text-2xs uppercase tracking-widest text-text-low">
@@ -205,6 +363,14 @@ export default function SaveToJournalSheet({
               className="mt-1.5 w-full resize-y border border-ink-700 bg-ink-950 px-2 py-1.5 text-xs leading-relaxed text-text-hi placeholder:text-text-low focus:border-phos focus:outline-none"
             />
           </div>
+
+          {history && (
+            <p className="text-2xs text-text-low">
+              Will link to {history.occurrences.length} past {history.name}{" "}
+              occurrence{history.occurrences.length === 1 ? "" : "s"} for replay
+              comparison.
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-ink-800 px-4 py-3">

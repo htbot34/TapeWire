@@ -3,11 +3,72 @@
 import { useCallback, useEffect, useState } from "react";
 import type { NewsItem } from "@/lib/news/types";
 import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
-import type { JournalEntry, JournalFolder } from "@/lib/journal";
-import { folderSummary, journalProvider } from "@/lib/journal";
+import type { HistoricalEventContext } from "@/lib/history";
+import { historicalEventProvider, historyKeyFor } from "@/lib/history";
+import type { JournalEntry, JournalFolder, JournalOutcome } from "@/lib/journal";
+import {
+  OUTCOME_LABEL,
+  folderStats,
+  folderSummary,
+  journalProvider,
+} from "@/lib/journal";
 import { dateTimeStamp, shortDate } from "@/lib/time";
-import { ImpactTag, ReactionChip, TickerChip } from "./atoms";
+import { ImpactTag, MoveText, TickerChip } from "./atoms";
 import ExplainerPanel from "./ExplainerPanel";
+import HistoricalTable from "./HistoricalTable";
+
+const OUTCOMES: JournalOutcome[] = ["held", "faded", "mixed"];
+
+function outcomeColor(o: JournalOutcome): string {
+  return o === "held" ? "text-pos" : o === "faded" ? "text-neg" : "text-impact-med";
+}
+
+/** "Actual +0.1% vs +0.2% exp" — the surprise cell, only when recorded. */
+function surpriseText(item: NewsItem): string | null {
+  if (!item.econ?.actual) return null;
+  return item.econ.forecast
+    ? `${item.econ.actual} vs ${item.econ.forecast} exp`
+    : item.econ.actual;
+}
+
+/**
+ * Related-historical cross-link: the curated occurrences table for this
+ * entry's event type, so the trader can compare their recorded reaction
+ * against the historical pattern ("show me the last soft CPIs and how NQ
+ * reacted"). Renders nothing when the dataset has no coverage.
+ */
+function RelatedHistorical({ entry }: { entry: JournalEntry }) {
+  const [history, setHistory] = useState<HistoricalEventContext | null>(null);
+
+  useEffect(() => {
+    const key = entry.relatedHistorical?.[0] ?? historyKeyFor(entry.item);
+    if (!key) {
+      setHistory(null);
+      return;
+    }
+    let alive = true;
+    historicalEventProvider.getByKey(key).then((h) => {
+      if (alive) setHistory(h);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [entry]);
+
+  if (!history) return null;
+  return (
+    <div className="mt-3 border-t border-ink-800/60 pt-2">
+      <div className="font-mono text-2xs uppercase tracking-[0.2em] text-text-low">
+        Related historical — {history.name}
+      </div>
+      <HistoricalTable history={history} />
+      <p className="mt-1 text-2xs text-text-low">
+        Compare your recorded reaction above against the pattern. Curated
+        dataset — mock data in the prototype.
+      </p>
+    </div>
+  );
+}
 
 function EntryRow({
   entry,
@@ -30,41 +91,128 @@ function EntryRow({
     setEditing(false);
   };
 
+  const setOutcome = (o: JournalOutcome) =>
+    journalProvider.updateEntry(entry.id, {
+      outcome: entry.outcome === o ? undefined : o,
+    });
+
+  const surprise = surpriseText(entry.item);
+
   return (
     <li className="border-b border-ink-800/70">
+      {/* Dense table row: date · surprise · reactions · outcome · tags */}
       <div
-        className="flex cursor-pointer items-baseline gap-2 px-3 py-2 hover:bg-ink-900 sm:px-4"
+        className="flex cursor-pointer items-baseline gap-2 px-3 py-[7px] hover:bg-ink-900 sm:px-4"
         onClick={() => setExpanded((e) => !e)}
         role="button"
         aria-expanded={expanded}
+        title={entry.item.headline}
       >
-        <span className="w-[46px] shrink-0">
-          <ImpactTag impact={entry.item.impact} compact />
+        <span className="tnum w-[52px] shrink-0 font-mono text-2xs text-text-hi">
+          {shortDate(entry.item.timestamp)}
         </span>
-        <span className="tnum w-[92px] shrink-0 font-mono text-2xs text-text-low">
-          {dateTimeStamp(entry.item.timestamp)}
+        <span className="tnum hidden w-[168px] shrink-0 truncate font-mono text-2xs text-text-mid sm:inline-block">
+          {surprise ?? "—"}
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-medium leading-snug text-text-hi">
-            {entry.item.headline}
-          </p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            {entry.reactions.map((r, i) => (
-              <ReactionChip key={`${r.instrument}-${i}`} reaction={r} />
-            ))}
-          </div>
-          {entry.notes && !editing && (
-            <p className="mt-1 text-xs leading-relaxed text-text-mid">
-              {entry.notes}
-            </p>
+        <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+          {entry.reactions.length ? (
+            entry.reactions.map((r, i) => <MoveText key={`${r.instrument}-${i}`} reaction={r} />)
+          ) : (
+            <span className="font-mono text-2xs text-text-low">no reaction recorded</span>
           )}
-        </div>
+        </span>
+        <span
+          className={`w-[46px] shrink-0 text-right font-mono text-2xs font-semibold uppercase ${
+            entry.outcome ? outcomeColor(entry.outcome) : "text-text-low"
+          }`}
+        >
+          {entry.outcome ? OUTCOME_LABEL[entry.outcome] : "—"}
+        </span>
+        <span className="hidden w-[136px] shrink-0 items-baseline justify-end gap-1 overflow-hidden md:flex">
+          {entry.tags.slice(0, 2).map((t) => (
+            <span
+              key={t}
+              className="truncate rounded-sm border border-ink-700 px-1 font-mono text-2xs text-text-low"
+            >
+              {t}
+            </span>
+          ))}
+          {entry.tags.length > 2 && (
+            <span className="font-mono text-2xs text-text-low">+{entry.tags.length - 2}</span>
+          )}
+        </span>
       </div>
 
       {expanded && (
         <div className="border-l-2 border-ink-700 bg-ink-900/60 px-4 pb-3 pt-2 sm:ml-4 sm:px-5">
+          {/* Full event context */}
+          <div className="flex flex-wrap items-baseline gap-2">
+            <ImpactTag impact={entry.item.impact} compact />
+            <span className="tnum font-mono text-2xs text-text-low">
+              {dateTimeStamp(entry.item.timestamp)} · {entry.item.source}
+            </span>
+          </div>
+          <p className="mt-1 text-[13px] font-medium leading-snug text-text-hi">
+            {entry.item.headline}
+          </p>
+
+          {/* Trade record */}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {entry.trade ? (
+              <span className="font-mono text-2xs">
+                <span
+                  className={`font-semibold uppercase ${
+                    entry.trade.direction === "long" ? "text-pos" : "text-neg"
+                  }`}
+                >
+                  {entry.trade.direction}
+                </span>{" "}
+                <span className="text-text-hi">{entry.trade.instrument}</span>
+                {entry.trade.note && (
+                  <span className="text-text-mid"> — {entry.trade.note}</span>
+                )}
+              </span>
+            ) : (
+              <span className="font-mono text-2xs text-text-low">observed only — no trade recorded</span>
+            )}
+            <span
+              className="ml-auto flex items-center gap-1"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="font-mono text-2xs text-text-low">outcome:</span>
+              {OUTCOMES.map((o) => (
+                <button
+                  key={o}
+                  onClick={() => setOutcome(o)}
+                  className={`rounded-sm border px-1.5 py-px font-mono text-2xs uppercase ${
+                    entry.outcome === o
+                      ? `border-current ${outcomeColor(o)}`
+                      : "border-ink-700 text-text-low hover:text-text-mid"
+                  }`}
+                  aria-pressed={entry.outcome === o}
+                  title={`Mark move as ${OUTCOME_LABEL[o]}${entry.outcome === o ? " (click to clear)" : ""}`}
+                >
+                  {OUTCOME_LABEL[o]}
+                </button>
+              ))}
+            </span>
+          </div>
+
+          {entry.tags.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {entry.tags.map((t) => (
+                <span
+                  key={t}
+                  className="rounded-sm border border-ink-700 px-1 font-mono text-2xs text-text-low"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
+
           {editing ? (
-            <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-1.5">
                 {reactions.map((r, i) => (
                   <div key={i} className="flex items-center gap-1.5">
@@ -150,8 +298,13 @@ function EntryRow({
             </div>
           ) : (
             <>
+              {entry.notes && (
+                <p className="mt-2 max-w-3xl text-xs leading-relaxed text-text-mid">
+                  {entry.notes}
+                </p>
+              )}
               {entry.item.body && (
-                <p className="max-w-3xl text-[13px] leading-relaxed text-text-mid">
+                <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-text-mid/80">
                   {entry.item.body}
                 </p>
               )}
@@ -216,11 +369,84 @@ function EntryRow({
                   saved {shortDate(entry.createdAt)}
                 </span>
               </div>
+              <RelatedHistorical entry={entry} />
             </>
           )}
         </div>
       )}
     </li>
+  );
+}
+
+/**
+ * The Replay stats header — the "trading is data and statistical analysis"
+ * payoff, computed honestly from recorded entries only. Under 3 entries the
+ * folder shows an unlock hint instead of thin math.
+ */
+function StatsHeader({ entries }: { entries: JournalEntry[] }) {
+  const stats = folderStats(entries);
+  if (!stats) {
+    return entries.length > 0 ? (
+      <p className="mt-3 border border-ink-800 bg-ink-900/60 px-3 py-2 font-mono text-2xs text-text-low">
+        Record {3 - entries.length} more entr{3 - entries.length === 1 ? "y" : "ies"} to
+        unlock folder stats ({entries.length} of 3).
+      </p>
+    ) : null;
+  }
+  const { avgMoves, outcomes, biggest } = stats;
+  return (
+    <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 border border-ink-800 bg-ink-900/60 px-3 py-2.5">
+      <div>
+        <div className="font-mono text-2xs uppercase tracking-widest text-text-low">Entries</div>
+        <div className="tnum mt-0.5 font-mono text-sm font-semibold text-text-hi">
+          {stats.entryCount}
+        </div>
+      </div>
+      {avgMoves.slice(0, 2).map((m) => (
+        <div key={m.instrument}>
+          <div className="font-mono text-2xs uppercase tracking-widest text-text-low">
+            Avg |{m.instrument}|
+          </div>
+          <div className="tnum mt-0.5 font-mono text-sm font-semibold text-text-hi">
+            {m.avgAbsPct.toFixed(1)}%
+            <span className="ml-1 text-2xs font-normal text-text-low">
+              across {m.count}
+            </span>
+          </div>
+        </div>
+      ))}
+      {outcomes.recorded > 0 && (
+        <div>
+          <div className="font-mono text-2xs uppercase tracking-widest text-text-low">
+            Held / Faded
+          </div>
+          <div className="tnum mt-0.5 font-mono text-sm font-semibold">
+            <span className="text-pos">{outcomes.held}</span>
+            <span className="text-text-low"> / </span>
+            <span className="text-neg">{outcomes.faded}</span>
+            {outcomes.mixed > 0 && (
+              <span className="text-2xs font-normal text-text-low"> +{outcomes.mixed} mixed</span>
+            )}
+          </div>
+        </div>
+      )}
+      {biggest && (
+        <div>
+          <div className="font-mono text-2xs uppercase tracking-widest text-text-low">
+            Biggest move
+          </div>
+          <div className="tnum mt-0.5 font-mono text-sm font-semibold text-text-hi">
+            <MoveText reaction={biggest} />
+            <span className="ml-1 text-2xs font-normal text-text-low">
+              {shortDate(biggest.date)}
+            </span>
+          </div>
+        </div>
+      )}
+      <p className="w-full font-mono text-2xs text-text-low">
+        Computed from your recorded entries only — nothing invented.
+      </p>
+    </div>
   );
 }
 
@@ -255,11 +481,11 @@ export default function JournalView() {
                 Journal
               </div>
               <h1 className="mt-1 text-xl font-semibold text-text-hi">
-                How news moved your markets
+                Your event database — how news moved your markets
               </h1>
               <p className="tnum mt-0.5 font-mono text-xs text-text-mid">
                 {entries.length} entr{entries.length === 1 ? "y" : "ies"} · saved
-                from the tape with the → button
+                from the tape with the → button · open a folder to replay it
               </p>
             </header>
 
@@ -274,6 +500,7 @@ export default function JournalView() {
                 {folders.map((f) => {
                   const fe = entriesFor(f.id);
                   const latest = fe[0];
+                  const summary = folderSummary(fe);
                   return (
                     <li key={f.id} className="border-b border-ink-800/70">
                       <button
@@ -295,6 +522,11 @@ export default function JournalView() {
                         <span className="tnum font-mono text-2xs text-text-low">
                           {fe.length} entr{fe.length === 1 ? "y" : "ies"}
                         </span>
+                        {summary && (
+                          <span className="tnum hidden truncate font-mono text-2xs text-text-low lg:inline">
+                            {summary}
+                          </span>
+                        )}
                         <span className="tnum ml-auto shrink-0 font-mono text-2xs text-text-low">
                           {latest ? `last ${shortDate(latest.item.timestamp)}` : "—"}
                         </span>
@@ -317,19 +549,16 @@ export default function JournalView() {
               >
                 ← Journal
               </button>
-              <h1 className="mt-1 text-xl font-semibold text-text-hi">
+              <div className="mt-1 font-mono text-2xs uppercase tracking-[0.25em] text-phos">
+                Replay
+              </div>
+              <h1 className="mt-0.5 text-xl font-semibold text-text-hi">
                 {selectedFolder.name}
               </h1>
-              {(() => {
-                const fe = entriesFor(selectedFolder.id);
-                const summary = folderSummary(fe);
-                return (
-                  <p className="tnum mt-0.5 font-mono text-xs text-text-mid">
-                    {fe.length} entr{fe.length === 1 ? "y" : "ies"}
-                    {summary ? ` · ${summary}` : ""}
-                  </p>
-                );
-              })()}
+              <p className="tnum mt-0.5 font-mono text-xs text-text-mid">
+                your event history, replayable
+              </p>
+              <StatsHeader entries={entriesFor(selectedFolder.id)} />
             </header>
 
             {entriesFor(selectedFolder.id).length === 0 ? (
@@ -344,11 +573,21 @@ export default function JournalView() {
                 </p>
               </div>
             ) : (
-              <ul className="mt-4">
-                {entriesFor(selectedFolder.id).map((e) => (
-                  <EntryRow key={e.id} entry={e} onExplain={setExplaining} />
-                ))}
-              </ul>
+              <>
+                {/* column headers for the dense entry table */}
+                <div className="mt-4 flex items-baseline gap-2 border-b border-ink-800 px-3 py-1.5 font-mono text-2xs uppercase tracking-wider text-text-low sm:px-4">
+                  <span className="w-[52px] shrink-0">Date</span>
+                  <span className="hidden w-[168px] shrink-0 sm:inline">Surprise</span>
+                  <span className="min-w-0 flex-1">Recorded reactions</span>
+                  <span className="w-[46px] shrink-0 text-right">Move</span>
+                  <span className="hidden w-[136px] shrink-0 text-right md:inline">Tags</span>
+                </div>
+                <ul>
+                  {entriesFor(selectedFolder.id).map((e) => (
+                    <EntryRow key={e.id} entry={e} onExplain={setExplaining} />
+                  ))}
+                </ul>
+              </>
             )}
           </>
         )}

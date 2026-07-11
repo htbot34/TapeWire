@@ -39,4 +39,10 @@ export interface HistoricalEventProvider {
    * fabricate one.
    */
   getContext(item: NewsItem): Promise<HistoricalEventContext | null>;
+
+  /**
+   * Context by stable key (e.g. "us-cpi") — used by journal entries whose
+   * relatedHistorical links were resolved at save time.
+   */
+  getByKey(key: string): Promise<HistoricalEventContext | null>;
 }

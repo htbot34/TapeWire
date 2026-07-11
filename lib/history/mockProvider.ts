@@ -415,4 +415,8 @@ export class MockHistoricalEventProvider implements HistoricalEventProvider {
     const key = historyKeyFor(item);
     return key ? (byKey.get(key) ?? null) : null;
   }
+
+  async getByKey(key: string): Promise<HistoricalEventContext | null> {
+    return byKey.get(key) ?? null;
+  }
 }

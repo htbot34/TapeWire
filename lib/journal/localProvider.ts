@@ -13,7 +13,8 @@ interface JournalData {
 /**
  * Forward-migrates blobs persisted by earlier prototype versions: reactions
  * saved before measurement intervals existed get interval "" (rendered as a
- * bare move — never an invented window).
+ * bare move — never an invented window), and entries saved before the
+ * Replay fields get an empty tag list.
  */
 function migrate(data: JournalData): JournalData {
   return {
@@ -21,6 +22,7 @@ function migrate(data: JournalData): JournalData {
     entries: data.entries.map((e) => ({
       ...e,
       reactions: (e.reactions ?? []).map((r) => ({ ...r, interval: r.interval ?? "" })),
+      tags: e.tags ?? [],
     })),
   };
 }
@@ -114,7 +116,12 @@ export class LocalStorageJournalProvider implements JournalProvider {
 
   async updateEntry(
     id: string,
-    patch: Partial<Pick<JournalEntry, "notes" | "reactions" | "folderId">>,
+    patch: Partial<
+      Pick<
+        JournalEntry,
+        "notes" | "reactions" | "folderId" | "trade" | "outcome" | "tags"
+      >
+    >,
   ): Promise<JournalEntry | null> {
     const data = this.load();
     const idx = data.entries.findIndex((e) => e.id === id);

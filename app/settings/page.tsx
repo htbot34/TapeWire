@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import ProModal from "@/components/ProModal";
 import {
@@ -76,7 +75,6 @@ function Section({
 }
 
 export default function SettingsPage() {
-  const router = useRouter();
   const {
     resetAll,
     proInterestEmail,
@@ -155,13 +153,20 @@ export default function SettingsPage() {
 
         <Section title="Demo">
           <p className="text-sm text-text-mid">
-            Clears all preferences and restarts onboarding.
+            Clears all preferences, journal entries and feedback, reseeds the
+            demo data, and restarts onboarding.
           </p>
           <button
             onClick={() => {
               resetAll();
+              // Clear the provider-owned blobs too, then hard-reload so the
+              // in-memory provider singletons reseed from scratch.
+              localStorage.removeItem("tapewire-journal");
+              localStorage.removeItem("tapewire-feedback");
               sessionStorage.removeItem("tw-landed");
-              router.replace("/onboarding");
+              window.location.assign(
+                `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/onboarding/`,
+              );
             }}
             className="mt-3 border border-impact-high/40 px-4 py-2 text-sm text-impact-high/90 hover:border-impact-high"
           >

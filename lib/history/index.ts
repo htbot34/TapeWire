@@ -9,3 +9,4 @@ export const historicalEventProvider: HistoricalEventProvider =
   new MockHistoricalEventProvider();
 
 export type * from "./types";
+export { historyKeyFor } from "./mockProvider";

@@ -7,5 +7,12 @@ export const journalProvider: JournalProvider = new LocalStorageJournalProvider(
 
 export type { JournalProvider } from "./provider";
 export type * from "./types";
-export { DEFAULT_FOLDER_NAMES, folderIdForName, suggestFolderName } from "./types";
-export { folderSummary } from "./summary";
+export {
+  DEFAULT_FOLDER_NAMES,
+  OUTCOME_LABEL,
+  SUGGESTED_TAGS,
+  folderIdForName,
+  suggestFolderName,
+} from "./types";
+export { folderStats, folderSummary } from "./summary";
+export type { FolderStats } from "./summary";

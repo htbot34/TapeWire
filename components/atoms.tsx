@@ -106,6 +106,19 @@ export function TickerChip({
   );
 }
 
+/** Compact instrument + move text (colored by direction), interval included. */
+export function MoveText({ reaction }: { reaction: MarketReaction }) {
+  const negative = reaction.move.trim().startsWith("-");
+  return (
+    <span className="tnum whitespace-nowrap font-mono text-2xs">
+      <span className="text-text-low">{reaction.instrument}&nbsp;</span>
+      <span className={negative ? "text-neg" : "text-pos"}>
+        {formatMove(reaction)}
+      </span>
+    </span>
+  );
+}
+
 export function ReactionChip({ reaction }: { reaction: MarketReaction }) {
   const negative = reaction.move.trim().startsWith("-");
   return (

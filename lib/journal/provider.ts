@@ -18,10 +18,15 @@ export interface JournalProvider {
   /** Saves a new entry; returns it with id/createdAt assigned. */
   saveEntry(input: NewJournalEntry): Promise<JournalEntry>;
 
-  /** Patches notes/reactions/folder on an entry. Returns null when missing. */
+  /** Patches user-editable fields on an entry. Returns null when missing. */
   updateEntry(
     id: string,
-    patch: Partial<Pick<JournalEntry, "notes" | "reactions" | "folderId">>,
+    patch: Partial<
+      Pick<
+        JournalEntry,
+        "notes" | "reactions" | "folderId" | "trade" | "outcome" | "tags"
+      >
+    >,
   ): Promise<JournalEntry | null>;
 
   deleteEntry(id: string): Promise<void>;

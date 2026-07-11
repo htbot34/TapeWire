@@ -98,6 +98,13 @@ export default function FeedView() {
               </Link>{" "}
               to your watchlist.
             </p>
+            <p className="mt-2 max-w-sm text-xs text-text-low">
+              Tip: when events do hit, save them to your{" "}
+              <Link href="/journal" className="text-phos/80 underline decoration-phos/30">
+                Journal
+              </Link>{" "}
+              with the → button — that history is what makes TapeWire yours.
+            </p>
           </div>
         ) : (
           <ul>

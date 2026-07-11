@@ -47,10 +47,11 @@ export default function Header() {
           </span>
         </Link>
 
+        {/* Journal holds second position — it's the flagship module. */}
         <nav className="flex items-center gap-3 sm:gap-4">
           <NavTab href="/" label="Feed" />
-          <NavTab href="/briefing" label="Briefing" />
           <NavTab href="/journal" label="Journal" />
+          <NavTab href="/briefing" label="Briefing" />
           <NavTab href="/calendar" label="Calendar" />
         </nav>
 

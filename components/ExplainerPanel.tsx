@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MarketReaction, NewsItem } from "@/lib/news/types";
-import { formatMove, getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
+import type { NewsItem } from "@/lib/news/types";
+import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 import { historicalEventProvider } from "@/lib/history";
 import { usePrefs } from "@/lib/store";
@@ -13,7 +13,8 @@ import {
   parseExplainSections,
   type ExplainSections,
 } from "@/lib/explainSections";
-import { TickerChip } from "./atoms";
+import { MoveText, TickerChip } from "./atoms";
+import HistoricalTable from "./HistoricalTable";
 
 type Status = "loading" | "streaming" | "done" | "error";
 /** "api" = route exists (live or canned server-side); "static" = GitHub Pages. */
@@ -22,18 +23,6 @@ type Mode = "api" | "static";
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
-}
-
-function MoveText({ reaction }: { reaction: MarketReaction }) {
-  const negative = reaction.move.trim().startsWith("-");
-  return (
-    <span className="tnum whitespace-nowrap font-mono text-2xs">
-      <span className="text-text-low">{reaction.instrument}&nbsp;</span>
-      <span className={negative ? "text-neg" : "text-pos"}>
-        {formatMove(reaction)}
-      </span>
-    </span>
-  );
 }
 
 /** Quiet section label — the panel's structure should whisper, not shout. */
@@ -58,41 +47,6 @@ function AiSkeleton() {
     <div className="mt-1 space-y-2" aria-label="Loading">
       <div className="skeleton h-3 w-11/12" />
       <div className="skeleton h-3 w-4/5" />
-    </div>
-  );
-}
-
-function HistoricalTable({ history }: { history: HistoricalEventContext }) {
-  return (
-    <div className="mt-1">
-      {history.occurrences.map((o, i) => (
-        <div
-          key={o.date}
-          className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-b border-ink-800/50 py-1 ${
-            i === 0 ? "border-l-2 border-l-phos bg-phos-faint/40 pl-2" : "pl-2.5"
-          }`}
-        >
-          <span className="tnum w-[74px] shrink-0 font-mono text-2xs text-text-hi">
-            {o.date}
-          </span>
-          {i === 0 && (
-            <span className="shrink-0 rounded-sm bg-phos/20 px-1 font-mono text-2xs font-semibold uppercase text-phos">
-              last
-            </span>
-          )}
-          <span className="tnum min-w-0 font-mono text-2xs text-text-mid">
-            {o.actual
-              ? `${o.actual}${o.consensus ? ` vs ${o.consensus} exp` : ""}`
-              : ""}
-            {o.surprise ? ` (${o.surprise})` : ""}
-          </span>
-          <span className="ml-auto flex shrink-0 flex-wrap justify-end gap-x-2">
-            {o.reactions.map((r) => (
-              <MoveText key={r.instrument} reaction={r} />
-            ))}
-          </span>
-        </div>
-      ))}
     </div>
   );
 }
