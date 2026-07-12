@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { newsProvider } from "@/lib/news";
 import type { NewsItem } from "@/lib/news/types";
 import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
-import { usePrefs } from "@/lib/store";
+import { SENSITIVITY_IMPACTS, usePrefs } from "@/lib/store";
 import { playBreakingTick } from "@/lib/audio";
 import { exactTime, relativeTime, tzLabel } from "@/lib/time";
 import { ReactionChip } from "./atoms";
@@ -30,6 +30,7 @@ const AUTO_SETTLE_MS = 45_000;
 export default function BreakingBanner() {
   const breakingAudio = usePrefs((s) => s.breakingAudio);
   const focusAlertMode = usePrefs((s) => s.focusAlertMode);
+  const alertSensitivity = usePrefs((s) => s.alertSensitivity);
   const [recentHigh, setRecentHigh] = useState<NewsItem[]>([]);
   const [cycleIdx, setCycleIdx] = useState(0);
   const [breaking, setBreaking] = useState<NewsItem | null>(null);
@@ -40,6 +41,8 @@ export default function BreakingBanner() {
   const dismissed = useRef<Set<string>>(new Set());
   const audioRef = useRef(breakingAudio);
   audioRef.current = breakingAudio;
+  const sensitivityRef = useRef(alertSensitivity);
+  sensitivityRef.current = alertSensitivity;
 
   useEffect(() => {
     let alive = true;
@@ -57,6 +60,12 @@ export default function BreakingBanner() {
     load();
 
     const unsub = newsProvider.subscribeToBreaking((item) => {
+      // Alert sensitivity (onboarding/settings) actually gates the banner:
+      // filtered items still land on the tape, they just don't take over.
+      if (!SENSITIVITY_IMPACTS[sensitivityRef.current].includes(item.impact)) {
+        load();
+        return;
+      }
       setBreaking(item);
       setAlertKey((k) => k + 1);
       if (audioRef.current) playBreakingTick();

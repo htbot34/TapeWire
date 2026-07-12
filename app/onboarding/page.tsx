@@ -4,11 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePrefs, DEFAULT_WATCHLIST, DEFAULT_ASSET_CLASSES } from "@/lib/store";
 import {
+  AlertSensitivityEditor,
   AssetClassPicker,
   SourcesEditor,
+  TradingProfileEditor,
   WatchlistEditor,
 } from "@/components/prefs-editors";
 
+// Four short steps, all skippable to defaults, total well under 3 minutes.
 const STEPS = [
   {
     title: "What do you trade?",
@@ -16,11 +19,15 @@ const STEPS = [
   },
   {
     title: "Your watchlist",
-    sub: "The feed and morning briefing are filtered to these symbols.",
+    sub: "The feed and Your Focus briefing are filtered to these symbols.",
   },
   {
-    title: "Sources",
-    sub: "Pick the feeds that make up your tape. Add anything we missed.",
+    title: "How you trade",
+    sub: "Session and style shape your ranking; sensitivity decides which alerts take over the banner.",
+  },
+  {
+    title: "Sources & personalities you follow",
+    sub: "Pick the feeds that make up your tape — and add any account or site we missed (@handle or URL).",
   },
 ];
 
@@ -87,7 +94,13 @@ export default function OnboardingPage() {
           <div className="mt-5">
             {step === 0 && <AssetClassPicker />}
             {step === 1 && <WatchlistEditor />}
-            {step === 2 && <SourcesEditor />}
+            {step === 2 && (
+              <div className="space-y-5">
+                <TradingProfileEditor />
+                <AlertSensitivityEditor />
+              </div>
+            )}
+            {step === 3 && <SourcesEditor />}
           </div>
         </div>
 

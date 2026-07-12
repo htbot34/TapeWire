@@ -2,7 +2,18 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AssetClass, SourceType } from "@/lib/news/types";
+import type { AssetClass, Impact, SourceType, TradingSession } from "@/lib/news/types";
+
+export type TradingStyle = "intraday" | "swing" | "both";
+
+/** Which impact tiers trigger the breaking banner. */
+export type AlertSensitivity = "critical" | "critical-relevant" | "everything";
+
+export const SENSITIVITY_IMPACTS: Record<AlertSensitivity, Impact[]> = {
+  critical: ["high"],
+  "critical-relevant": ["high", "medium"],
+  everything: ["high", "medium", "low"],
+};
 
 export interface NewsSource {
   id: string;
@@ -53,7 +64,15 @@ interface PrefsState {
   assetClasses: AssetClass[];
   watchlist: string[];
   sources: NewsSource[];
+  /** When the user trades — flavors Your Focus rationale. */
+  tradingSession: TradingSession;
+  /** Intraday / swing / both. Stored for the production ranking engine. */
+  tradingStyle: TradingStyle;
+  /** Which impact tiers take over the banner. Actually gates the banner. */
+  alertSensitivity: AlertSensitivity;
   proInterestEmail: string | null;
+  /** Pricing fake-door: tiers the user marked interest in ("core"|"pro"|"founding"). */
+  proTierInterest: string[];
   /** Audio tick on breaking alerts. Off by default — traders opt in. */
   breakingAudio: boolean;
   /**
@@ -70,7 +89,11 @@ interface PrefsState {
   toggleSource: (id: string) => void;
   addCustomSource: (input: string) => void;
   removeSource: (id: string) => void;
+  setTradingSession: (s: TradingSession) => void;
+  setTradingStyle: (s: TradingStyle) => void;
+  setAlertSensitivity: (s: AlertSensitivity) => void;
   setProInterestEmail: (email: string) => void;
+  toggleProTierInterest: (tier: string) => void;
   toggleBreakingAudio: () => void;
   toggleFocusAlertMode: () => void;
   applyDefaults: () => void;
@@ -85,7 +108,11 @@ export const usePrefs = create<PrefsState>()(
       assetClasses: [],
       watchlist: [],
       sources: DEFAULT_SOURCES,
+      tradingSession: "new-york",
+      tradingStyle: "intraday",
+      alertSensitivity: "critical",
       proInterestEmail: null,
+      proTierInterest: [],
       breakingAudio: false,
       focusAlertMode: false,
       _hasHydrated: false,
@@ -121,7 +148,16 @@ export const usePrefs = create<PrefsState>()(
       },
       removeSource: (id) =>
         set((s) => ({ sources: s.sources.filter((src) => src.id !== id) })),
+      setTradingSession: (v) => set({ tradingSession: v }),
+      setTradingStyle: (v) => set({ tradingStyle: v }),
+      setAlertSensitivity: (v) => set({ alertSensitivity: v }),
       setProInterestEmail: (email) => set({ proInterestEmail: email }),
+      toggleProTierInterest: (tier) =>
+        set((s) => ({
+          proTierInterest: s.proTierInterest.includes(tier)
+            ? s.proTierInterest.filter((t) => t !== tier)
+            : [...s.proTierInterest, tier],
+        })),
       toggleBreakingAudio: () => set((s) => ({ breakingAudio: !s.breakingAudio })),
       toggleFocusAlertMode: () => set((s) => ({ focusAlertMode: !s.focusAlertMode })),
       applyDefaults: () =>
@@ -129,6 +165,9 @@ export const usePrefs = create<PrefsState>()(
           assetClasses: DEFAULT_ASSET_CLASSES,
           watchlist: DEFAULT_WATCHLIST,
           sources: DEFAULT_SOURCES,
+          tradingSession: "new-york",
+          tradingStyle: "intraday",
+          alertSensitivity: "critical",
           onboarded: true,
         }),
       resetAll: () =>
@@ -137,7 +176,11 @@ export const usePrefs = create<PrefsState>()(
           assetClasses: [],
           watchlist: [],
           sources: DEFAULT_SOURCES,
+          tradingSession: "new-york",
+          tradingStyle: "intraday",
+          alertSensitivity: "critical",
           proInterestEmail: null,
+          proTierInterest: [],
           breakingAudio: false,
           focusAlertMode: false,
         }),
@@ -153,7 +196,11 @@ export const usePrefs = create<PrefsState>()(
         assetClasses: s.assetClasses,
         watchlist: s.watchlist,
         sources: s.sources,
+        tradingSession: s.tradingSession,
+        tradingStyle: s.tradingStyle,
+        alertSensitivity: s.alertSensitivity,
         proInterestEmail: s.proInterestEmail,
+        proTierInterest: s.proTierInterest,
         breakingAudio: s.breakingAudio,
         focusAlertMode: s.focusAlertMode,
       }),

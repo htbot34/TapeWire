@@ -59,7 +59,7 @@ export default function Header() {
           <button
             onClick={() => setProOpen(true)}
             className="rounded-sm border border-impact-med/40 px-1.5 py-0.5 font-mono text-2xs font-semibold uppercase tracking-widest text-impact-med hover:border-impact-med"
-            title="TapeWire Pro — coming soon"
+            title="Plans & pricing — free 14-day trial"
           >
             Pro
           </button>

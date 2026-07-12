@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import ProModal from "@/components/ProModal";
 import {
+  AlertSensitivityEditor,
   AssetClassPicker,
   SourcesEditor,
+  TradingProfileEditor,
   WatchlistEditor,
 } from "@/components/prefs-editors";
 import type { FeedbackKind } from "@/lib/feedback";
@@ -100,12 +102,17 @@ export default function SettingsPage() {
           <WatchlistEditor />
         </Section>
 
+        <Section title="How you trade">
+          <TradingProfileEditor />
+        </Section>
+
         <Section title="Sources">
           <SourcesEditor />
         </Section>
 
         <Section title="Alerts">
-          <label className="flex cursor-pointer items-center gap-2.5">
+          <AlertSensitivityEditor />
+          <label className="mt-4 flex cursor-pointer items-center gap-2.5">
             <input
               type="checkbox"
               checked={focusAlertMode}
@@ -140,15 +147,16 @@ export default function SettingsPage() {
           <FeedbackSection />
         </Section>
 
-        <Section title="TapeWire Pro">
+        <Section title="Plans & pricing">
           <p className="text-sm text-text-mid">
-            AI news journal, unlimited custom sources, faster refresh.
+            Core $39/mo · Pro $79/mo · Founding Trader $24/mo locked for a
+            year (first 100 users). Free 14-day trial on every plan.
           </p>
           <button
             onClick={() => setProOpen(true)}
             className="mt-3 border border-impact-med/50 px-4 py-2 text-sm font-medium text-impact-med hover:border-impact-med"
           >
-            {proInterestEmail ? "You're on the Pro list" : "Learn about Pro — $12/mo"}
+            {proInterestEmail ? "You're on the list — view plans" : "View plans"}
           </button>
         </Section>
 

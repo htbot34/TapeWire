@@ -1,6 +1,6 @@
 import type { NewsProvider } from "./provider";
 import type { Impact, MarketReaction, NewsItem, RankedBriefingItem, UserFilters } from "./types";
-import { formatMove } from "./types";
+import { SESSION_LABEL, formatMove } from "./types";
 import { buildBreakingItem, buildCustomSourceItem, mockNewsItems } from "./mockData";
 
 const IMPACT_WEIGHT: Record<Impact, number> = { high: 100, medium: 40, low: 10 };
@@ -40,8 +40,17 @@ function focusReasons(item: NewsItem, filters: UserFilters): string[] {
 
   const directHits = [...item.directTickers, ...(item.pairs ?? [])].filter(inWatch);
   const corrHits = item.correlatedTickers.filter(inWatch);
+  const session =
+    filters.tradingSession && filters.tradingSession !== "all"
+      ? SESSION_LABEL[filters.tradingSession]
+      : null;
   if (directHits.length) {
-    reasons.push(`it directly tags ${directHits.slice(0, 3).join("/")} on your watchlist`);
+    const syms = directHits.slice(0, 3).join("/");
+    reasons.push(
+      session
+        ? `you trade ${syms} during ${session} and this tags it directly`
+        : `it directly tags ${syms} on your watchlist`,
+    );
   } else if (corrHits.length && item.impact === "high") {
     reasons.push(`it hits ${corrHits.slice(0, 2).join("/")} you watch via correlation`);
   } else if (

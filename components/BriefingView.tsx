@@ -244,15 +244,20 @@ function CompactItem({
 }
 
 export default function BriefingView() {
-  const { watchlist, assetClasses } = usePrefs();
+  const { watchlist, assetClasses, tradingSession } = usePrefs();
   const [ranked, setRanked] = useState<RankedBriefingItem[] | null>(null);
   const [explaining, setExplaining] = useState<NewsItem | null>(null);
 
   useEffect(() => {
     newsProvider
-      .getOvernightBriefing({ watchlist, assetClasses, watchlistOnly: true })
+      .getOvernightBriefing({
+        watchlist,
+        assetClasses,
+        tradingSession,
+        watchlistOnly: true,
+      })
       .then(setRanked);
-  }, [watchlist, assetClasses]);
+  }, [watchlist, assetClasses, tradingSession]);
 
   const highCount = ranked?.filter((r) => r.item.impact === "high").length ?? 0;
   const quietNight = ranked !== null && ranked.length > 0 && highCount === 0;

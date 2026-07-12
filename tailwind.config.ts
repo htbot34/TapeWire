@@ -21,8 +21,10 @@ const config: Config = {
         },
         text: {
           hi: "#e8edf4",
-          mid: "#93a1b3",
-          low: "#5c6b7f",
+          // v3 readability pass: secondary text contrast lifted one step —
+          // this app sits on a second monitor several feet away.
+          mid: "#9db0c4",
+          low: "#6b7d93",
         },
         phos: {
           DEFAULT: "#4fb8a6", // muted phosphor teal — the one accent
@@ -63,7 +65,9 @@ const config: Config = {
         ],
       },
       fontSize: {
-        "2xs": ["0.6875rem", { lineHeight: "1rem" }],
+        // v3 readability pass: was 0.6875rem — timestamps, sources and chips
+        // gain one size step across every row; the density layout is unchanged.
+        "2xs": ["0.75rem", { lineHeight: "1.05rem" }],
       },
     },
   },

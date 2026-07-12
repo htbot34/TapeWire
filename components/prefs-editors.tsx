@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { AssetClass } from "@/lib/news/types";
+import type { AssetClass, TradingSession } from "@/lib/news/types";
 import { POPULAR_SYMBOLS, searchSymbols } from "@/lib/symbols";
+import type { AlertSensitivity, TradingStyle } from "@/lib/store";
 import { usePrefs } from "@/lib/store";
 
 // Shared preference editors used by both onboarding and settings.
@@ -129,6 +130,105 @@ export function WatchlistEditor() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ChipRow<T extends string>({
+  label,
+  options,
+  value,
+  onPick,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  value: T;
+  onPick: (v: T) => void;
+}) {
+  return (
+    <div>
+      <div className="font-mono text-2xs uppercase tracking-widest text-text-low">
+        {label}
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {options.map((o) => {
+          const active = value === o.value;
+          return (
+            <button
+              key={o.value}
+              onClick={() => onPick(o.value)}
+              className={`rounded-sm border px-2.5 py-1 text-xs ${
+                active
+                  ? "border-phos/60 bg-phos-faint text-phos"
+                  : "border-ink-700 text-text-mid hover:border-ink-800 hover:text-text-hi"
+              }`}
+              aria-pressed={active}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const SESSIONS: { value: TradingSession; label: string }[] = [
+  { value: "asia", label: "Asia" },
+  { value: "london", label: "London" },
+  { value: "new-york", label: "New York" },
+  { value: "all", label: "All sessions" },
+];
+
+const STYLES: { value: TradingStyle; label: string }[] = [
+  { value: "intraday", label: "Intraday" },
+  { value: "swing", label: "Swing" },
+  { value: "both", label: "Both" },
+];
+
+const SENSITIVITIES: { value: AlertSensitivity; label: string }[] = [
+  { value: "critical", label: "Critical only" },
+  { value: "critical-relevant", label: "Critical + Relevant" },
+  { value: "everything", label: "Everything" },
+];
+
+/** Session + style — shared by onboarding step 3 and Settings. */
+export function TradingProfileEditor() {
+  const { tradingSession, setTradingSession, tradingStyle, setTradingStyle } =
+    usePrefs();
+  return (
+    <div className="space-y-4">
+      <ChipRow
+        label="Trading session"
+        options={SESSIONS}
+        value={tradingSession}
+        onPick={setTradingSession}
+      />
+      <ChipRow
+        label="Style"
+        options={STYLES}
+        value={tradingStyle}
+        onPick={setTradingStyle}
+      />
+    </div>
+  );
+}
+
+/** Alert sensitivity — actually gates which impacts take over the banner. */
+export function AlertSensitivityEditor() {
+  const { alertSensitivity, setAlertSensitivity } = usePrefs();
+  return (
+    <div>
+      <ChipRow
+        label="Alert sensitivity"
+        options={SENSITIVITIES}
+        value={alertSensitivity}
+        onPick={setAlertSensitivity}
+      />
+      <p className="mt-1.5 text-2xs text-text-low">
+        Controls which impact levels take over the breaking banner. Everything
+        still lands on the tape.
+      </p>
     </div>
   );
 }

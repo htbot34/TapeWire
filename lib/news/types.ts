@@ -8,6 +8,15 @@ export type SourceType = "wire" | "outlet" | "social" | "econ-calendar";
 
 export type AssetClass = "equities" | "options" | "futures" | "forex" | "crypto";
 
+export type TradingSession = "asia" | "london" | "new-york" | "all";
+
+export const SESSION_LABEL: Record<TradingSession, string> = {
+  asia: "Asia",
+  london: "London",
+  "new-york": "New York",
+  all: "All sessions",
+};
+
 export type EventType =
   | "econ-release"
   | "earnings"
@@ -136,6 +145,8 @@ export interface UserFilters {
   watchlist: string[];
   /** Asset classes the user trades. */
   assetClasses: AssetClass[];
+  /** Trading session preference — flavors the ranked-because rationale. */
+  tradingSession?: TradingSession;
   /** When true, restrict to items matching the watchlist / asset classes. */
   watchlistOnly: boolean;
   /** Optional narrowing filters set from the filter bar. */
