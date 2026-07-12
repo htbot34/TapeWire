@@ -6,28 +6,31 @@ The prototype is structured so that swapping mock data for real feeds touches
 ## The provider boundary
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│  UI (app/, components/)                                              │
-│  FeedView · BriefingView · CalendarView · JournalView                │
-│  BreakingBanner · ExplainerPanel · SaveToJournalSheet                │
-└───────────────────────────────┬──────────────────────────────────────┘
-                                │  imports ONLY interfaces + instances
-        ┌───────────────┬───────┴───────┬────────────────┐
-        ▼               ▼               ▼                ▼
-  lib/news/       lib/calendar/    lib/history/     lib/journal/
-  NewsProvider    CalendarProvider HistoricalEvent- JournalProvider
-                                   Provider
-  getFeed         getEvents        getContext       folders/entries CRUD
-  getOvernight-   (range query)    (item → facts)   + subscribe
-  Briefing
-  subscribeTo-
-  Breaking
-        ▲               ▲               ▲                ▲
-  MockNewsProvider MockCalendar-  MockHistorical-  LocalStorage-
-  ~60 seeded items Provider       EventProvider    JournalProvider
-  canned breaking  ±1 day of      curated CPI/NFP/ localStorage blob,
-  pool             entries        FOMC/earnings    seeded demo entries
-                                  occurrences
+┌──────────────────────────────────────────────────────────────────────────┐
+│  UI (app/, components/)                                                  │
+│  FeedView · BriefingView · CalendarView · JournalView (Replay)           │
+│  BreakingBanner · ExplainerPanel · SaveToJournalSheet                    │
+│  FeedbackControl · MoveDetectiveBlock                                    │
+└───────────────────────────────────┬──────────────────────────────────────┘
+                                    │  imports ONLY interfaces + instances
+    ┌──────────────┬────────────────┼───────────────┬──────────────┬──────┐
+    ▼              ▼                ▼               ▼              ▼      ▼
+ lib/news/    lib/calendar/   lib/history/    lib/journal/  lib/feedback/ lib/moveDetective/
+ NewsProvider CalendarProvider HistoricalEvent- JournalProvider Feedback-  MoveDetective-
+                               Provider                        Provider   Provider
+ getFeed      getEvents       getContext      folders/entries  per-item   getAnalysis
+ getOvernight- (range query)  getByKey        CRUD + subscribe relevance  (item → static
+ Briefing                     (item → facts)                   judgments  preview analysis)
+ (ranked +
+ reasons)
+ subscribeTo-
+ Breaking
+    ▲              ▲                ▲               ▲              ▲      ▲
+ MockNews-    MockCalendar-   MockHistorical- LocalStorage-  LocalStorage- MockMove-
+ Provider     Provider        EventProvider   JournalProvider Feedback-   DetectiveProvider
+ ~60 seeds    ±1 day of       curated CPI/NFP/ seeded demo    Provider    hand-written
+ canned       entries         FOMC/earnings   entries                     analyses
+ breaking pool                occurrences
 ```
 
 - Every data domain follows the same rule: `lib/<domain>/index.ts` exports a
@@ -45,6 +48,9 @@ The prototype is structured so that swapping mock data for real feeds touches
   save time so entries survive independently of feed retention. Folder
   summaries (`summary.ts`) are computed strictly from user-recorded
   reactions — counts and averages, nothing invented.
+- `lib/moveDetective/` — `MoveDetectiveProvider` returns PREVIEW catalyst
+  analyses for specific mock events (see the Move Detective section below).
+  Most items return null and the UI renders nothing — no invented analyses.
 - `lib/feedback/` — `FeedbackProvider` stores per-item relevance judgments
   (Useful · Not relevant · Wrong asset mapping · Wrong catalyst) from the ⋯
   control on feed/briefing rows. **Nothing consumes this data yet by
@@ -85,6 +91,50 @@ Building it means capturing each release as it happens (consensus from the
 calendar feed, actual from the wire print, reaction snapshots from market
 data at t+1min/t+30min/close) — a natural by-product of the ingestion
 pipeline below.
+
+## Ranking-engine roadmap (production)
+
+The prototype's briefing score (impact weight + watchlist bonus + recency +
+reaction bonus) is a stand-in for the production weighted model:
+
+| Signal                       | Weight | Prototype status                            |
+| ---------------------------- | ------ | ------------------------------------------- |
+| Direct watchlist relevance   | 30%    | binary bonus via `directTickers` match      |
+| Observed market impact       | 20%    | small bonus when a reaction is recorded     |
+| Event importance             | 15%    | the Critical/Relevant/Context tier          |
+| Source reliability           | 10%    | `sourceVerified` captured, not yet scored   |
+| Recency                      | 10%    | linear age decay in the briefing score      |
+| Correlation relevance        | 10%    | `correlatedTickers` match (Critical only)   |
+| User behavior                | 5%     | **fed by the FeedbackProvider data** — the  |
+|                              |        | ⋯ control's Useful / Not relevant / Wrong   |
+|                              |        | asset / Wrong catalyst judgments            |
+
+Two properties are non-negotiable regardless of weights: rankings must stay
+explainable per-item (trust rule 9 — the "Ranked #N because…" line is the
+contract), and commercial relationships never enter the model (trust
+rule 10).
+
+## Data strategy (production sourcing)
+
+Three lanes, in order of certainty:
+
+1. **Public/official APIs — free, legal, authoritative.** BLS (CPI/NFP),
+   FRED (rates, macro series), SEC EDGAR (filings), Federal Reserve
+   calendars and statements. These cover the scheduled-release backbone of
+   the product: the econ calendar, actual/forecast/previous values, and the
+   historical events database's ground truth.
+2. **Licensed commercial vendor for fast breaking news + market prices** —
+   e.g. the Benzinga API (newswire built for redistribution) plus a licensed
+   market-data feed for the price/volume side (reaction capture, Move
+   Detective). This is the main COGS line and the fastest legal route to a
+   credible tape.
+3. **What is explicitly NOT a path: scraping or redistributing personal
+   subscriptions.** Piping a personal Reuters/Bloomberg terminal, X account,
+   or FinancialJuice subscription into a multi-user product violates their
+   terms and is not a viable business foundation. Where such sources are
+   must-haves (see the sourcing-risk section below), the options are
+   official APIs, licensed white-label deals, or building the equivalent
+   dataset first-party.
 
 ## Move Detective (PREVIEW in the prototype — future flagship)
 
