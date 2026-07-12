@@ -6,14 +6,17 @@ import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import { usePrefs } from "@/lib/store";
 import { dateTimeStamp, relativeTime } from "@/lib/time";
 import {
+  CorrectedTag,
   EconValues,
   IMPACT_LABEL,
   ImpactTag,
   ReactionChip,
   ScheduledTag,
+  SourceLatencyLine,
   SourceTag,
   TickerChip,
 } from "./atoms";
+import { shortTime } from "@/lib/time";
 import FeedbackControl from "./FeedbackControl";
 import JournalButton from "./JournalButton";
 import MoveDetectiveBlock from "./MoveDetectiveBlock";
@@ -75,6 +78,11 @@ export default function NewsRow({
                 : "text-text-mid"
           }`}
         >
+          {item.correction && (
+            <span className="mr-1.5 align-middle">
+              <CorrectedTag />
+            </span>
+          )}
           {item.headline}
         </span>
         <span className="hidden shrink-0 items-center gap-1 md:flex">
@@ -107,14 +115,32 @@ export default function NewsRow({
         <div className="border-l-2 border-ink-700 bg-ink-900/60 px-4 pb-3 pt-2 sm:ml-4 sm:px-5">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span className="tnum font-mono text-2xs text-text-low">
-              {dateTimeStamp(item.timestamp)} · {item.source} · {item.eventType} ·{" "}
+              {dateTimeStamp(item.timestamp)} · {item.eventType} ·{" "}
               {IMPACT_LABEL[item.impact]}
             </span>
             <ScheduledTag scheduled={item.scheduled} />
           </div>
+          <div className="tnum mt-0.5">
+            <SourceLatencyLine item={item} />
+          </div>
           {item.econ && (
             <div className="mt-1">
               <EconValues econ={item.econ} />
+            </div>
+          )}
+          {item.correction && (
+            <div className="mt-2 border-l-2 border-impact-med/60 bg-impact-med/5 px-2.5 py-1.5">
+              <div className="flex items-baseline gap-2">
+                <CorrectedTag />
+                {item.correctedAt && (
+                  <span className="tnum font-mono text-2xs text-text-low">
+                    issued {shortTime(item.correctedAt)}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-text-mid">
+                {item.correction}
+              </p>
             </div>
           )}
           {item.body && (

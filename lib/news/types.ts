@@ -82,6 +82,17 @@ export interface NewsItem {
   body?: string; // expanded article text (mock)
   url?: string;
   marketReaction?: MarketReaction[];
+  /**
+   * Source-latency line, e.g. "received 0.8s after release" — a brand trust
+   * element rendered subtly on expanded views and Explain panels.
+   */
+  latency?: string;
+  /** True when the source is an authenticated/known feed (gov, wire, outlet). */
+  sourceVerified?: boolean;
+  /** When a correction was issued (ISO). The original headline is never rewritten. */
+  correctedAt?: string;
+  /** The correction text, rendered under a visible CORRECTED tag. */
+  correction?: string;
 }
 
 /**

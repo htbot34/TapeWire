@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { usePrefs } from "@/lib/store";
 import Header from "./Header";
 import BreakingBanner from "./BreakingBanner";
+import TrustRulesLink from "./TrustRulesModal";
 
 /**
  * Shared chrome for the feed and briefing screens: header + breaking banner.
@@ -33,6 +34,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Header />
       <BreakingBanner />
       {children}
+      <footer className="mx-auto flex max-w-6xl items-center gap-3 px-3 py-4 sm:px-4">
+        <span className="font-mono text-2xs text-text-low/70">
+          TapeWire prototype · mock data
+        </span>
+        <TrustRulesLink />
+      </footer>
     </>
   );
 }

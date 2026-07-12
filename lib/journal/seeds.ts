@@ -31,6 +31,8 @@ const snap = (
   sourceType: "econ-calendar",
   assetClasses: ["equities", "options", "futures"],
   scheduled: true, // all seeded entries are calendar events (CPI/FOMC/earnings)
+  sourceVerified: true,
+  latency: "received 0.8s after release",
   ...partial,
 });
 

@@ -10,6 +10,7 @@ import {
 } from "@/components/prefs-editors";
 import type { FeedbackKind } from "@/lib/feedback";
 import { FEEDBACK_KINDS, FEEDBACK_LABEL, feedbackProvider } from "@/lib/feedback";
+import TrustRulesLink from "@/components/TrustRulesModal";
 import { usePrefs } from "@/lib/store";
 
 function FeedbackSection() {
@@ -149,6 +150,14 @@ export default function SettingsPage() {
           >
             {proInterestEmail ? "You're on the Pro list" : "Learn about Pro — $12/mo"}
           </button>
+        </Section>
+
+        <Section title="Trust">
+          <p className="text-sm text-text-mid">
+            The ten product rules TapeWire is built against — raw before AI,
+            fact vs. inference, visible corrections, honest rankings.
+          </p>
+          <TrustRulesLink className="mt-3 inline-block border border-ink-700 px-4 py-2 font-mono text-xs uppercase tracking-wide text-text-mid hover:border-phos hover:text-phos" />
         </Section>
 
         <Section title="Demo">

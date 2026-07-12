@@ -1,4 +1,4 @@
-import type { Impact, MarketReaction } from "@/lib/news/types";
+import type { Impact, MarketReaction, NewsItem } from "@/lib/news/types";
 import { formatMove } from "@/lib/news/types";
 
 // Product-wide impact taxonomy: the internal enum stays high/medium/low, the
@@ -170,6 +170,42 @@ export function EconValues({
   return (
     <span className="tnum font-mono text-2xs text-text-mid">
       {parts.join(" · ")}
+    </span>
+  );
+}
+
+/**
+ * Source trust line: `BLS · verified source · received 0.8s after release`.
+ * A brand trust element, rendered subtly on expanded views and the Explain
+ * panel — never decoration, never loud.
+ */
+export function SourceLatencyLine({ item }: { item: NewsItem }) {
+  const parts = [
+    item.source,
+    item.sourceVerified === true
+      ? "verified source"
+      : item.sourceVerified === false
+        ? "unverified account"
+        : null,
+    item.latency ?? null,
+  ].filter(Boolean);
+  return (
+    <span
+      className={`font-mono text-2xs ${
+        item.sourceVerified === false ? "text-impact-med/80" : "text-text-low"
+      }`}
+      title="Source verification and wire-to-terminal latency"
+    >
+      {parts.join(" · ")}
+    </span>
+  );
+}
+
+/** Visible correction marker — the original headline is never rewritten. */
+export function CorrectedTag() {
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-sm border border-impact-med/60 bg-impact-med/10 px-1 py-px font-mono text-2xs font-semibold uppercase tracking-wide text-impact-med">
+      Corrected
     </span>
   );
 }

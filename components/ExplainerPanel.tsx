@@ -13,7 +13,7 @@ import {
   parseExplainSections,
   type ExplainSections,
 } from "@/lib/explainSections";
-import { MoveText, TickerChip } from "./atoms";
+import { CorrectedTag, MoveText, SourceLatencyLine, TickerChip } from "./atoms";
 import HistoricalTable from "./HistoricalTable";
 
 type Status = "loading" | "streaming" | "done" | "error";
@@ -210,11 +210,24 @@ export default function ExplainerPanel({
           <div className="min-w-0 flex-1">
             <SectionLabel>Raw event</SectionLabel>
             <p className="mt-1 text-[13px] font-medium leading-snug text-text-hi">
+              {item.correction && (
+                <span className="mr-1.5 align-middle">
+                  <CorrectedTag />
+                </span>
+              )}
               {item.headline}
             </p>
             <div className="tnum mt-1 font-mono text-2xs text-text-mid">
-              {item.source} · {exactDateTimeStamp(item.timestamp)} {tzLabel()}
+              {exactDateTimeStamp(item.timestamp)} {tzLabel()}
             </div>
+            <div className="tnum mt-0.5">
+              <SourceLatencyLine item={item} />
+            </div>
+            {item.correction && (
+              <p className="mt-1.5 border-l-2 border-impact-med/60 pl-2 text-2xs leading-relaxed text-text-mid">
+                {item.correction}
+              </p>
+            )}
           </div>
           <button
             onClick={onClose}
