@@ -86,6 +86,30 @@ calendar feed, actual from the wire print, reaction snapshots from market
 data at t+1min/t+30min/close) — a natural by-product of the ingestion
 pipeline below.
 
+## Move Detective (PREVIEW in the prototype — future flagship)
+
+The prototype's `lib/moveDetective/MockMoveDetectiveProvider` returns
+hand-written static analyses keyed to specific mock events, badged
+"PREVIEW — simulated analysis" in the UI. Production requires three real
+systems behind the same provider interface:
+
+1. **Real-time price/volume feed** — tick-level (or at minimum 1s bar)
+   data for the instruments TapeWire tracks, licensed market data.
+2. **Anomaly detection** — flagging fast moves on elevated volume against
+   rolling baselines (the "NQ −0.9% in 2m on elevated volume" trigger).
+3. **Catalyst-ranking engine** — matching detected moves against the news
+   ingestion stream: headline timing vs. move start, which instruments led,
+   cross-asset signature (did rates move? did a single name lead?), and
+   historical event-type fingerprints.
+
+**Doctrine rule (non-negotiable): proximity in time is never sufficient to
+claim causation.** The five-label taxonomy — Confirmed catalyst · Likely
+catalyst · Possible contributor · No verified news catalyst ·
+Technical/positioning move suspected — exists so the honest negatives are
+first-class outputs. "No verified news catalyst" is the trust feature: an
+engine that always finds a story is indistinguishable from one that makes
+them up.
+
 ## What the real providers need
 
 1. **Latency target (confirmed by user research): breaking banner within

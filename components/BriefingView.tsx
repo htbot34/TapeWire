@@ -17,6 +17,7 @@ import {
 import ExplainerPanel from "./ExplainerPanel";
 import FeedbackControl from "./FeedbackControl";
 import JournalButton from "./JournalButton";
+import MoveDetectiveBlock from "./MoveDetectiveBlock";
 
 function useWatchlistCheck() {
   const watchlist = usePrefs((s) => s.watchlist);
@@ -160,6 +161,7 @@ function TopItem({
               View source →
             </a>
           )}
+          <MoveDetectiveBlock item={item} />
         </div>
       )}
     </li>

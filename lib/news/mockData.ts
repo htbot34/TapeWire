@@ -182,6 +182,26 @@ const seeds: Seed[] = [
     body: "A senior administration official told CNBC the review of advanced chip export licenses is 'weeks, not months' from conclusion, and that decisions would balance security concerns with commercial interests.",
   },
   {
+    // A detected price move with no attached story — exists to demo the Move
+    // Detective's honest-negative case. Clearly badged as a TapeWire-generated
+    // observation, not a wire headline (see README judgment calls).
+    minutesAgo: 35,
+    headline: "NQ DROPS 0.6% IN 3 MINUTES ON ELEVATED VOLUME; NO HEADLINE ON WIRES",
+    source: "TapeWire Signals",
+    sourceType: "wire",
+    impact: "medium",
+    scheduled: false,
+    directTickers: ["NQ"],
+    correlatedTickers: ["ES", "QQQ"],
+    assetClasses: ["futures", "equities"],
+    eventType: "other",
+    body: "TapeWire's move detection flagged a fast NQ decline on elevated volume with no matching headline on monitored wires. See the Move Detective block for the catalyst scan. Signals items are system-generated observations, not news headlines.",
+    marketReaction: [
+      { instrument: "NQ", move: "-0.6%", interval: "3m" },
+      { instrument: "ES", move: "-0.3%", interval: "3m" },
+    ],
+  },
+  {
     minutesAgo: 38,
     headline: "@unusual_whales: Massive 0DTE put volume hitting SPX 30 minutes into the session, largest sweep $4.1M premium",
     source: "@unusual_whales",
@@ -944,6 +964,25 @@ export const mockNewsItems: NewsItem[] = seeds.map(({ minutesAgo, ...rest }) => 
 type BreakingSeed = Omit<NewsItem, "id" | "timestamp">;
 
 export const breakingPool: BreakingSeed[] = [
+  // First in the pool — the founder's reference scenario for the two-line
+  // banner and the Move Detective preview.
+  {
+    headline: "U.S. ANNOUNCES EXPANDED SEMICONDUCTOR EXPORT RESTRICTIONS",
+    source: "Reuters",
+    sourceType: "wire",
+    impact: "high",
+    scheduled: false,
+    directTickers: ["NVDA", "AMD", "SMH"],
+    correlatedTickers: ["NQ", "ES"],
+    assetClasses: ["equities", "options", "futures"],
+    eventType: "geopolitical",
+    body: "The Commerce Department announced an expansion of semiconductor export restrictions covering additional advanced-node equipment and AI accelerators. Chipmakers with China exposure sold off immediately on the headline; index futures followed as the semi complex dragged.",
+    marketReaction: [
+      { instrument: "NQ", move: "-0.9%", interval: "2m" },
+      { instrument: "NVDA", move: "-2.8%", interval: "2m" },
+      { instrument: "SMH", move: "-2.4%", interval: "2m" },
+    ],
+  },
   {
     headline: "FED'S POWELL: 'THE TIME HAS COME FOR POLICY TO ADJUST' — UNSCHEDULED REMARKS",
     source: "Reuters",

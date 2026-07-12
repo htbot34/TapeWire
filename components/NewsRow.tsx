@@ -16,6 +16,7 @@ import {
 } from "./atoms";
 import FeedbackControl from "./FeedbackControl";
 import JournalButton from "./JournalButton";
+import MoveDetectiveBlock from "./MoveDetectiveBlock";
 
 /**
  * One dense, scannable tape row. Tap anywhere to expand inline (accordion,
@@ -142,6 +143,7 @@ export default function NewsRow({
               </span>
             )}
           </div>
+          <MoveDetectiveBlock item={item} />
           <div className="mt-2 flex items-center gap-3">
             {item.url && (
               <a
