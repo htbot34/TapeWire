@@ -187,6 +187,12 @@ export interface UserFilters {
   /** Optional narrowing filters set from the filter bar. */
   impacts?: Impact[];
   eventTypes?: EventType[];
+  /**
+   * Scheduled (calendar-driven) vs. unscheduled (surprise) events;
+   * undefined = both. Unscheduled is the shocks-only view — geopolitical
+   * headlines and surprise prints, with the red-folder routine filtered out.
+   */
+  scheduled?: boolean;
   /** Restrict to specific symbols (subset of watchlist chips clicked in the UI). */
   symbols?: string[];
   /** Restrict to specific source names (e.g. "Reuters", or a custom source's stored name). */

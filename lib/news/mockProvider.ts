@@ -46,6 +46,9 @@ function applyFilters(items: NewsItem[], filters: UserFilters): NewsItem[] {
     if (filters.watchlistOnly && !matchesWatchlist(item, filters)) return false;
     if (filters.impacts?.length && !filters.impacts.includes(item.impact)) return false;
     if (filters.eventTypes?.length && !filters.eventTypes.includes(item.eventType)) return false;
+    if (filters.scheduled !== undefined && item.scheduled !== filters.scheduled) {
+      return false;
+    }
     if (filters.symbols?.length) {
       const wanted = new Set(filters.symbols.map((s) => s.toUpperCase()));
       // Same rule as the watchlist gate: direct always, correlated only on

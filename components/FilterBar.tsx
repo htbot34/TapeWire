@@ -7,10 +7,30 @@ export interface FeedFilterState {
   watchlistOnly: boolean;
   impacts: Impact[];
   eventType: EventType | "all";
+  /**
+   * Scheduled (calendar events) vs. unscheduled (shocks) — a first-class,
+   * one-click toggle: geopolitical surprises and red-folder releases are
+   * different trading problems.
+   */
+  schedule: "all" | "scheduled" | "unscheduled";
   symbols: string[];
   /** NewsSource id from prefs, or "all". Custom sources appear here too. */
   sourceId: string;
 }
+
+const SCHEDULES: { value: FeedFilterState["schedule"]; label: string; title: string }[] = [
+  { value: "all", label: "All", title: "Scheduled and unscheduled events" },
+  {
+    value: "scheduled",
+    label: "Scheduled",
+    title: "Calendar-driven only — econ releases, earnings, scheduled speeches",
+  },
+  {
+    value: "unscheduled",
+    label: "Unscheduled",
+    title: "Surprises only — geopolitical shocks, tweets, headlines on no calendar",
+  },
+];
 
 const EVENT_TYPES: { value: EventType | "all"; label: string }[] = [
   { value: "all", label: "All events" },
@@ -82,6 +102,25 @@ export default function FilterBar({
           >
             All news
           </button>
+        </div>
+
+        {/* Scheduled / Unscheduled — first-class, one click from the tape */}
+        <div className="flex overflow-hidden rounded-sm border border-ink-700 font-mono text-2xs uppercase tracking-wider">
+          {SCHEDULES.map((s, i) => (
+            <button
+              key={s.value}
+              onClick={() => onChange({ ...filters, schedule: s.value })}
+              title={s.title}
+              aria-pressed={filters.schedule === s.value}
+              className={`px-2 py-1 ${i > 0 ? "border-l border-ink-700" : ""} ${
+                filters.schedule === s.value
+                  ? "bg-phos-faint text-phos"
+                  : "text-text-low hover:text-text-mid"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
         </div>
 
         {/* Impact chips */}
