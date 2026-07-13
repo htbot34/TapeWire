@@ -47,7 +47,7 @@ const EVENT_TYPES: { value: EventType | "all"; label: string }[] = [
 const IMPACTS: { value: Impact; label: string; on: string }[] = [
   { value: "high", label: "Critical", on: "border-impact-high/60 text-impact-high" },
   { value: "medium", label: "Relevant", on: "border-impact-med/60 text-impact-med" },
-  { value: "low", label: "Context", on: "border-text-low/60 text-text-mid" },
+  { value: "low", label: "Context", on: "border-impact-low/60 text-impact-low" },
 ];
 
 export default function FilterBar({

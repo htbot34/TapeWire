@@ -23,7 +23,7 @@ export function ImpactDot({ impact }: { impact: Impact }) {
       ? "bg-impact-high"
       : impact === "medium"
         ? "bg-impact-med"
-        : "bg-impact-low/60";
+        : "bg-impact-low";
   return (
     <span
       className={`inline-block h-[7px] w-[7px] shrink-0 rounded-full ${cls}`}
@@ -48,7 +48,7 @@ export function ImpactTag({
       ? "text-impact-high"
       : impact === "medium"
         ? "text-impact-med"
-        : "text-text-low";
+        : "text-impact-low";
   return (
     <span
       className="inline-flex shrink-0 items-baseline gap-1"
