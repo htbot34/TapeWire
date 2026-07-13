@@ -1,7 +1,8 @@
+import { calendarProvider } from "@/lib/calendar";
 import type { NewsProvider } from "./provider";
-import type { Impact, MarketReaction, NewsItem, RankedBriefingItem, UserFilters } from "./types";
-import { SESSION_LABEL, formatMove } from "./types";
+import type { Impact, NewsItem, RankedBriefingItem, UserFilters } from "./types";
 import { buildBreakingItem, buildCustomSourceItem, mockNewsItems } from "./mockData";
+import { analyzeUserFit, biggestReaction, buildRationale, reactionPct } from "./rationale";
 
 const IMPACT_WEIGHT: Record<Impact, number> = { high: 100, medium: 40, low: 10 };
 
@@ -16,74 +17,6 @@ const BRIEFING_MAX_AGE_MS = 16 * 60 * 60 * 1000;
  */
 const FOCUS_THRESHOLD = 70;
 const FOCUS_MAX = 7;
-
-/** The reaction with the largest absolute % move (falls back to the first). */
-function biggestReaction(item: NewsItem): MarketReaction | null {
-  const rs = item.marketReaction ?? [];
-  if (rs.length === 0) return null;
-  const pct = (r: MarketReaction) => {
-    const m = r.move.match(/-?\d+(?:\.\d+)?(?=\s*%)/);
-    return m ? Math.abs(parseFloat(m[0])) : -1;
-  };
-  return rs.reduce((best, r) => (pct(r) > pct(best) ? r : best), rs[0]);
-}
-
-/**
- * Deterministic "Ranked #N because…" components — template-based from item
- * data + the user's watchlist/asset classes only. No AI call: this must
- * render instantly and can never fabricate.
- */
-function focusReasons(item: NewsItem, filters: UserFilters): string[] {
-  const reasons: string[] = [];
-  const watch = new Set(filters.watchlist.map((s) => s.toUpperCase()));
-  const inWatch = (s: string) => watch.has(s.toUpperCase());
-
-  const directHits = [...item.directTickers, ...(item.pairs ?? [])].filter(inWatch);
-  const corrHits = item.correlatedTickers.filter(inWatch);
-  const session =
-    filters.tradingSession && filters.tradingSession !== "all"
-      ? SESSION_LABEL[filters.tradingSession]
-      : null;
-  if (directHits.length) {
-    const syms = directHits.slice(0, 3).join("/");
-    reasons.push(
-      session
-        ? `you trade ${syms} during ${session} and this tags it directly`
-        : `it directly tags ${syms} on your watchlist`,
-    );
-  } else if (corrHits.length && item.impact === "high") {
-    reasons.push(`it hits ${corrHits.slice(0, 2).join("/")} you watch via correlation`);
-  } else if (
-    item.impact === "high" &&
-    item.assetClasses.some((a) => filters.assetClasses.includes(a))
-  ) {
-    const classes = item.assetClasses
-      .filter((a) => filters.assetClasses.includes(a))
-      .join("/");
-    reasons.push(`it's Critical macro for the ${classes} markets you trade`);
-  }
-
-  if (item.impact === "high" && item.scheduled && item.eventType === "econ-release") {
-    reasons.push("it's a red-folder scheduled release");
-  } else if (item.impact === "high" && !item.scheduled) {
-    reasons.push("it's an unscheduled Critical headline");
-  } else if (item.impact === "high") {
-    reasons.push("it's rated Critical");
-  }
-
-  const r = biggestReaction(item);
-  if (r) {
-    // Phrase intervals ("since release", "overnight") already carry their
-    // own context — only duration intervals get the trailing clause.
-    const suffix = /^\d+(s|m|h|d)$/.test(r.interval)
-      ? item.scheduled
-        ? " after the release"
-        : " on the headline"
-      : "";
-    reasons.push(`${r.instrument} moved ${formatMove(r)}${suffix}`);
-  }
-  return reasons.slice(0, 3);
-}
 
 function matchesWatchlist(item: NewsItem, filters: UserFilters): boolean {
   const watch = new Set(filters.watchlist.map((s) => s.toUpperCase()));
@@ -161,27 +94,56 @@ export class MockNewsProvider implements NewsProvider {
       const age = now - new Date(item.timestamp).getTime();
       return age >= BRIEFING_MIN_AGE_MS && age <= BRIEFING_MAX_AGE_MS;
     });
-    // Watchlist-first, but never impact-blind: score = impact + relevance + recency.
+    // Watchlist-first, but never impact-blind: score = impact + user fit +
+    // recency. Items with nothing specific to this user are demoted and can
+    // never carry a rationale — the no-generic-reasons rule is structural.
     const scored = applyFilters(overnight, { ...filters, watchlistOnly: false }).map(
       (item) => {
+        const fit = analyzeUserFit(item, filters);
         let score = IMPACT_WEIGHT[item.impact];
-        if (matchesWatchlist(item, filters)) score += 30;
+        if (fit.kind === "direct" || fit.kind === "correlated") score += 30;
+        else if (fit.kind === "asset-class") score += 15;
+        else score -= 20; // not specific to this user → ranks low
         const ageHours = (now - new Date(item.timestamp).getTime()) / 3_600_000;
         score += Math.max(0, 16 - ageHours); // mild recency bonus
         if (item.marketReaction?.length) score += 5;
-        return { item, score };
+        return { item, score, fit };
       },
     );
     const ranked = scored.sort((a, b) => b.score - a.score);
-    return ranked.map(({ item, score }, i) => {
-      const focus = score >= FOCUS_THRESHOLD && i < FOCUS_MAX;
-      return {
-        item,
-        score,
-        focus,
-        reasons: focus ? focusReasons(item, filters) : [],
-      };
-    });
+
+    // The pillar-2 comparative clause ("largest reaction across your ranked
+    // briefing") attaches to exactly one item: the biggest recorded |%| move.
+    let largestId: string | null = null;
+    let largestPct = 0;
+    for (const { item } of ranked) {
+      const r = biggestReaction(item);
+      const pct = r ? reactionPct(r) : -1;
+      if (pct > largestPct) {
+        largestPct = pct;
+        largestId = item.id;
+      }
+    }
+
+    // Upcoming calendar events feed pillar 3's "next follow-on" clause.
+    const upcoming = await calendarProvider.getEvents(
+      new Date(now).toISOString(),
+      new Date(now + 24 * 3_600_000).toISOString(),
+    );
+
+    return Promise.all(
+      ranked.map(async ({ item, score, fit }, i) => {
+        const focus =
+          score >= FOCUS_THRESHOLD && i < FOCUS_MAX && fit.kind !== "none";
+        const rationale = focus
+          ? await buildRationale(item, filters, fit, {
+              largestInSet: item.id === largestId,
+              upcoming,
+            })
+          : null;
+        return { item, score, focus, rationale: rationale ?? undefined };
+      }),
+    );
   }
 
   subscribeToBreaking(cb: (item: NewsItem) => void): () => void {

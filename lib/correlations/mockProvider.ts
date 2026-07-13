@@ -29,6 +29,7 @@ const GROUP_LABELS: Record<string, string> = {
   "obesity-drugs": "GLP-1 / obesity drugs",
   autos: "autos",
   logistics: "logistics",
+  "china-equities": "China equities",
 };
 
 const label = (id: string) => GROUP_LABELS[id];
@@ -120,6 +121,8 @@ const EDGES: CorrelationEdge[] = [
   { from: "TSLA", to: "autos", kind: "member-of", label: label("autos") },
   { from: "ZIM", to: "logistics", kind: "member-of", label: label("logistics") },
   { from: "FDX", to: "logistics", kind: "member-of", label: label("logistics") },
+  { from: "FXI", to: "china-equities", kind: "weights", label: label("china-equities") },
+  { from: "BABA", to: "china-equities", kind: "member-of", label: label("china-equities") },
 ];
 
 /** Longest chain the provider will surface: 3 edges (4 nodes). */

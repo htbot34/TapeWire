@@ -1,5 +1,5 @@
-import type { Impact, MarketReaction, NewsItem } from "@/lib/news/types";
-import { formatMove } from "@/lib/news/types";
+import type { Impact, MarketReaction, NewsItem, WatchlistImpact } from "@/lib/news/types";
+import { WATCHLIST_IMPACT_LABEL, formatMove } from "@/lib/news/types";
 
 // Product-wide impact taxonomy: the internal enum stays high/medium/low, the
 // UI always says Critical/Relevant/Context — and never color alone (every
@@ -62,6 +62,30 @@ export function ImpactTag({
       >
         {compact ? IMPACT_TAG[impact] : IMPACT_LABEL[impact]}
       </span>
+    </span>
+  );
+}
+
+/**
+ * Watchlist-impact label — answers "how much does this touch MY symbols?",
+ * a different question from the global Critical/Relevant/Context tier, so it
+ * gets a visually distinct treatment (sentence-case prefix, no dot, no
+ * border). Impact color tokens plus the word — never color alone.
+ */
+export function WatchlistImpactTag({ impact }: { impact: WatchlistImpact }) {
+  const color =
+    impact === "high"
+      ? "text-impact-high"
+      : impact === "medium"
+        ? "text-impact-med"
+        : "text-impact-low";
+  return (
+    <span
+      className="font-mono text-2xs"
+      title={`${WATCHLIST_IMPACT_LABEL[impact]} impact on your watchlist — computed from your watchlist and correlation data`}
+    >
+      <span className="text-text-low">Impact on your watchlist: </span>
+      <span className={`font-semibold ${color}`}>{WATCHLIST_IMPACT_LABEL[impact]}</span>
     </span>
   );
 }
