@@ -13,7 +13,7 @@ import {
 } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 import { historicalEventProvider } from "@/lib/history";
-import { mockExplanation, mockFollowUpReply } from "@/lib/explainFallback";
+import { mockBannerBrief, mockExplanation, mockFollowUpReply } from "@/lib/explainFallback";
 
 export const runtime = "nodejs";
 
@@ -42,7 +42,23 @@ interface ExplainRequest {
    */
   profile?: TraderProfile;
   rationale?: RankRationale;
+  /**
+   * "banner" = the inline Explain thread on the breaking-news takeover. The
+   * first reply must be a concise 2–3 sentence factual briefing (brevity
+   * instruction appended below); neutrality rules are identical.
+   */
+  context?: "banner";
 }
+
+/**
+ * Brevity instruction for the banner thread. Appended after the base prompt
+ * — it overrides only the four-section FORMAT for this surface; every
+ * neutrality and fact-vs-inference rule stands unchanged.
+ */
+const BANNER_BRIEF_MODE = `BANNER BRIEF MODE: the trader clicked Explain on a breaking-news banner mid-session. For your FIRST reply, IGNORE the four-labeled-section format above and instead give a concise briefing of the event — 2 to 3 sentences, facts only (what happened, the recorded market reaction). Do not over-explain unless asked. Follow-up replies stay equally tight. All STRICT NEUTRALITY and FACT VS INFERENCE rules above apply unchanged, including ending the first reply with "Context, not financial advice."`;
+
+const INITIAL_BANNER_TURN =
+  "Give me a concise factual briefing of this breaking event — 2–3 sentences.";
 
 const SYSTEM_PROMPT_BASE = `You are the explainer inside TapeWire, a news terminal used by active stock, options, futures and FX day traders. The trader has opened one raw wire headline and may ask follow-up questions. Explain in plain language, tight and scannable, under 180 words per reply.
 
@@ -157,17 +173,20 @@ export async function POST(req: Request) {
     return new Response("Invalid request", { status: 400 });
   }
 
-  const { item, watchlist = [], messages = [], profile, rationale } = body;
+  const { item, watchlist = [], messages = [], profile, rationale, context } = body;
   const history = await historicalEventProvider.getContext(item);
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  const banner = context === "banner";
 
   // No key → canned replies, demo keeps working (initial + follow-ups, with
-  // the same neutrality contract).
+  // the same neutrality contract; the banner path stays concise).
   if (!apiKey) {
     const lastUser = [...messages].reverse().find((m) => m.role === "user");
     const text = lastUser
       ? mockFollowUpReply(lastUser.content, item, history)
-      : mockExplanation(item, watchlist, history);
+      : banner
+        ? mockBannerBrief(item)
+        : mockExplanation(item, watchlist, history);
     return new Response(text, {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
@@ -182,11 +201,22 @@ export async function POST(req: Request) {
     "",
     formatHistory(history),
     ...(personalization ? ["", personalization] : []),
+    ...(banner ? ["", BANNER_BRIEF_MODE] : []),
   ].join("\n");
 
-  const thread: ChatMessage[] = messages.length
-    ? messages
-    : [{ role: "user", content: INITIAL_USER_TURN }];
+  // Clients send the visible thread, which begins with the auto-generated
+  // assistant reply; the API requires a user turn first, so the implicit
+  // initial question is restored here.
+  const initialTurn: ChatMessage = {
+    role: "user",
+    content: banner ? INITIAL_BANNER_TURN : INITIAL_USER_TURN,
+  };
+  const thread: ChatMessage[] =
+    messages.length === 0
+      ? [initialTurn]
+      : messages[0].role === "assistant"
+        ? [initialTurn, ...messages]
+        : messages;
 
   try {
     const client = new Anthropic({ apiKey });
@@ -230,7 +260,9 @@ export async function POST(req: Request) {
     const lastUser = [...messages].reverse().find((m) => m.role === "user");
     const text = lastUser
       ? mockFollowUpReply(lastUser.content, item, history)
-      : mockExplanation(item, watchlist, history);
+      : banner
+        ? mockBannerBrief(item)
+        : mockExplanation(item, watchlist, history);
     return new Response(text, {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });

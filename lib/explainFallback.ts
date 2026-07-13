@@ -69,6 +69,26 @@ export function mockExplanation(
   ].join("\n");
 }
 
+/**
+ * Canned CONCISE briefing for the banner Explain thread when the live API is
+ * unavailable — 2–3 sentences, facts only, mirroring the brevity instruction
+ * the live route applies in banner context. Same neutrality contract.
+ */
+export function mockBannerBrief(item: NewsItem): string {
+  const firstSentence = item.body?.match(/^.*?[.!?](\s|$)/)?.[0]?.trim();
+  const reaction = item.marketReaction?.map(formatReaction).join(", ");
+  return [
+    firstSentence ?? item.headline,
+    reaction ? `Recorded reaction: ${reaction}.` : null,
+    ``,
+    `Context, not financial advice.`,
+    ``,
+    `[Demo mode: live AI needs a server deployment with ANTHROPIC_API_KEY]`,
+  ]
+    .filter((l) => l !== null)
+    .join("\n");
+}
+
 const ADVICE_PATTERN =
   /\b(should i|buy|sell|short|long|hold|dump|load up|price target|predict|forecast|will (it|this|the market)|going (up|down)|bullish or bearish|good (trade|entry)|take profit|stop loss)\b/i;
 

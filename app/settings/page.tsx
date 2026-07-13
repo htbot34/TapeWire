@@ -11,7 +11,7 @@ import {
   WatchlistEditor,
 } from "@/components/prefs-editors";
 import type { FeedbackKind } from "@/lib/feedback";
-import { FEEDBACK_KINDS, FEEDBACK_LABEL, feedbackProvider } from "@/lib/feedback";
+import { ALL_FEEDBACK_KINDS, FEEDBACK_LABEL, feedbackProvider } from "@/lib/feedback";
 import TrustRulesLink from "@/components/TrustRulesModal";
 import { usePrefs } from "@/lib/store";
 
@@ -21,7 +21,9 @@ function FeedbackSection() {
   useEffect(() => {
     const refresh = () =>
       feedbackProvider.getAll().then((records) => {
-        const next = { useful: 0, "not-relevant": 0, "wrong-asset": 0, "wrong-catalyst": 0 };
+        const next = Object.fromEntries(
+          ALL_FEEDBACK_KINDS.map((k) => [k, 0]),
+        ) as Record<FeedbackKind, number>;
         for (const r of records) next[r.kind] += 1;
         setCounts(next);
       });
@@ -34,13 +36,14 @@ function FeedbackSection() {
   return (
     <>
       <p className="text-sm text-text-mid">
-        Relevance judgments you&apos;ve given via the ⋯ control on feed and
-        briefing rows. Nothing consumes this yet — in production it trains
-        your personal ranking.
+        Relevance judgments from the ⋯ control on feed and briefing rows,
+        plus Useful / False alarm from the breaking banner. Nothing consumes
+        this yet — in production, row feedback trains your personal ranking
+        and banner feedback tunes the takeover thresholds.
       </p>
       {counts && (
         <ul className="mt-3 space-y-1">
-          {FEEDBACK_KINDS.map((kind) => (
+          {ALL_FEEDBACK_KINDS.map((kind) => (
             <li key={kind} className="flex items-baseline gap-2 font-mono text-xs">
               <span className="text-text-mid">{FEEDBACK_LABEL[kind]}</span>
               <span className="flex-1 border-b border-dotted border-ink-700" />
@@ -83,8 +86,8 @@ export default function SettingsPage() {
     proInterestEmail,
     breakingAudio,
     toggleBreakingAudio,
-    focusAlertMode,
-    toggleFocusAlertMode,
+    compactBanner,
+    toggleCompactBanner,
   } = usePrefs();
   const [proOpen, setProOpen] = useState(false);
 
@@ -115,15 +118,16 @@ export default function SettingsPage() {
           <label className="mt-4 flex cursor-pointer items-center gap-2.5">
             <input
               type="checkbox"
-              checked={focusAlertMode}
-              onChange={toggleFocusAlertMode}
+              checked={compactBanner}
+              onChange={toggleCompactBanner}
               className="h-3.5 w-3.5 accent-[#4fb8a6]"
             />
-            <span className="text-sm text-text-hi">Focus Alert mode</span>
+            <span className="text-sm text-text-hi">Compact banner</span>
           </label>
           <p className="mt-1.5 text-2xs text-text-low">
-            When on, Critical events use the full banner takeover. When off,
-            they use the readable two-line alert. Try both with the ⚡ button.
+            Qualifying Critical alerts take over the banner by default (the
+            exact rule is in Trust rules). Turn this on to use the compact
+            two-line alert instead. Try both with the ⚡ button.
           </p>
           <label className="mt-4 flex cursor-pointer items-center gap-2.5">
             <input

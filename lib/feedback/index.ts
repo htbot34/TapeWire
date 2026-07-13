@@ -6,4 +6,4 @@ import { LocalStorageFeedbackProvider } from "./localProvider";
 export const feedbackProvider: FeedbackProvider = new LocalStorageFeedbackProvider();
 
 export type * from "./types";
-export { FEEDBACK_KINDS, FEEDBACK_LABEL } from "./types";
+export { ALL_FEEDBACK_KINDS, FEEDBACK_KINDS, FEEDBACK_LABEL } from "./types";

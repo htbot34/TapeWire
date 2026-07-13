@@ -1,4 +1,9 @@
-import type { FeedbackKind, FeedbackProvider, FeedbackRecord } from "./types";
+import type {
+  FeedbackKind,
+  FeedbackProvider,
+  FeedbackRecord,
+  FeedbackSurface,
+} from "./types";
 
 const STORAGE_KEY = "tapewire-feedback";
 
@@ -41,11 +46,16 @@ export class LocalStorageFeedbackProvider implements FeedbackProvider {
     return this.load().find((r) => r.itemId === itemId)?.kind ?? null;
   }
 
-  async setFeedback(itemId: string, headline: string, kind: FeedbackKind): Promise<void> {
+  async setFeedback(
+    itemId: string,
+    headline: string,
+    kind: FeedbackKind,
+    surface: FeedbackSurface = "row",
+  ): Promise<void> {
     const records = this.load();
     this.records = [
       ...records.filter((r) => r.itemId !== itemId),
-      { itemId, headline, kind, at: new Date().toISOString() },
+      { itemId, headline, kind, surface, at: new Date().toISOString() },
     ];
     this.persist();
   }
