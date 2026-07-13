@@ -14,3 +14,6 @@ export function simulateBreakingNews() {
 
 export type { NewsProvider } from "./provider";
 export type * from "./types";
+// Display-side helper for the compressed pillar-1 card line — deterministic,
+// same inputs as the provider's rationale computation.
+export { compressedInstruments } from "./rationale";

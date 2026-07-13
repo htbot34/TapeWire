@@ -1,8 +1,10 @@
 import type { Config } from "tailwindcss";
 
 // Palette derived from trading-terminal vernacular: near-black blue-tinted
-// ground, muted phosphor teal for interactive chrome, saturated red reserved
-// strictly for high-impact/breaking, desaturated amber for medium.
+// ground, muted phosphor teal for interactive chrome, and the universal
+// trader impact convention — red for high, clear orange for medium, a
+// restrained yellow for low (v4; both verified ≥4.5:1 on the page ground).
+// Impact color always travels with a text label, never alone.
 const config: Config = {
   content: [
     "./app/**/*.{ts,tsx}",
@@ -34,9 +36,10 @@ const config: Config = {
         impact: {
           high: "#e5484d",
           highdim: "#7f2a2d",
-          med: "#c9974a",
-          meddim: "#6e5527",
-          low: "#5c6b7f",
+          med: "#e8823a", // clear orange (contrast ~7.1:1 on ink-950)
+          meddim: "#7c4a1e",
+          low: "#d6b84a", // restrained yellow (contrast ~10:1 on ink-950)
+          lowdim: "#5c4f1f",
         },
         pos: "#4cc38a",
         neg: "#e5484d",

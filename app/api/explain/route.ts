@@ -1,13 +1,19 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { NewsItem } from "@/lib/news/types";
+import type {
+  AssetClass,
+  NewsItem,
+  RankRationale,
+  TradingSession,
+} from "@/lib/news/types";
 import {
+  SESSION_LABEL,
   formatReaction,
   getCorrelatedTickers,
   getDirectTickers,
 } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 import { historicalEventProvider } from "@/lib/history";
-import { mockExplanation, mockFollowUpReply } from "@/lib/explainFallback";
+import { mockBannerBrief, mockExplanation, mockFollowUpReply } from "@/lib/explainFallback";
 
 export const runtime = "nodejs";
 
@@ -16,12 +22,43 @@ interface ChatMessage {
   content: string;
 }
 
+interface TraderProfile {
+  tradingSession?: TradingSession;
+  tradingStyle?: string;
+  assetClasses?: AssetClass[];
+  watchlist?: string[];
+}
+
 interface ExplainRequest {
   item: NewsItem;
   watchlist: string[];
   /** Conversation so far. Empty/absent → generate the initial explanation. */
   messages?: ChatMessage[];
+  /**
+   * The trader's profile and (for ranked briefing items) the deterministic
+   * three-pillar rationale. Context only: they personalize which instruments
+   * and mechanics the reply emphasizes — the neutrality directive in the
+   * system prompt is untouched and still bans advice and prediction.
+   */
+  profile?: TraderProfile;
+  rationale?: RankRationale;
+  /**
+   * "banner" = the inline Explain thread on the breaking-news takeover. The
+   * first reply must be a concise 2–3 sentence factual briefing (brevity
+   * instruction appended below); neutrality rules are identical.
+   */
+  context?: "banner";
 }
+
+/**
+ * Brevity instruction for the banner thread. Appended after the base prompt
+ * — it overrides only the four-section FORMAT for this surface; every
+ * neutrality and fact-vs-inference rule stands unchanged.
+ */
+const BANNER_BRIEF_MODE = `BANNER BRIEF MODE: the trader clicked Explain on a breaking-news banner mid-session. For your FIRST reply, IGNORE the four-labeled-section format above and instead give a concise briefing of the event — 2 to 3 sentences, facts only (what happened, the recorded market reaction). Do not over-explain unless asked. Follow-up replies stay equally tight. All STRICT NEUTRALITY and FACT VS INFERENCE rules above apply unchanged, including ending the first reply with "Context, not financial advice."`;
+
+const INITIAL_BANNER_TURN =
+  "Give me a concise factual briefing of this breaking event — 2–3 sentences.";
 
 const SYSTEM_PROMPT_BASE = `You are the explainer inside TapeWire, a news terminal used by active stock, options, futures and FX day traders. The trader has opened one raw wire headline and may ask follow-up questions. Explain in plain language, tight and scannable, under 180 words per reply.
 
@@ -86,6 +123,44 @@ function buildItemContext(item: NewsItem, watchlist: string[]): string {
   return parts.join("\n");
 }
 
+/**
+ * Personalization context: trader profile + the deterministic ranking
+ * rationale. Framing only — appended alongside the item context, never
+ * modifying the neutrality rules in SYSTEM_PROMPT_BASE.
+ */
+function buildPersonalization(
+  profile?: TraderProfile,
+  rationale?: RankRationale,
+): string | null {
+  const parts: string[] = [];
+  if (profile) {
+    const bits = [
+      profile.assetClasses?.length ? `trades ${profile.assetClasses.join(", ")}` : null,
+      profile.tradingSession ? `session: ${SESSION_LABEL[profile.tradingSession]}` : null,
+      profile.tradingStyle ? `style: ${profile.tradingStyle}` : null,
+      profile.watchlist?.length ? `watchlist: ${profile.watchlist.join(", ")}` : null,
+    ].filter(Boolean);
+    if (bits.length) parts.push(`TRADER PROFILE: ${bits.join(" | ")}`);
+  }
+  if (rationale) {
+    parts.push(
+      [
+        "RANKING RATIONALE (computed deterministically by TapeWire from the trader's watchlist + the maintained correlation dataset; the trader sees these as facts above your reply):",
+        `  Their instruments: ${rationale.instruments}`,
+        `  Watchlist impact: ${rationale.watchlistImpact}`,
+        `  Market impact: ${rationale.impact}`,
+        `  Why now: ${rationale.whyNow}`,
+        ...rationale.relevancePaths.map((p) => `  Relevance chain: ${p.display}`),
+      ].join("\n"),
+    );
+  }
+  if (!parts.length) return null;
+  parts.push(
+    "PERSONALIZATION: use the profile and rationale above to tailor which instruments and mechanics you emphasize for this trader. This adjusts relevance framing ONLY — every neutrality and fact-vs-inference rule above applies unchanged.",
+  );
+  return parts.join("\n\n");
+}
+
 const INITIAL_USER_TURN =
   "Explain what this headline means for a trader who just glanced at it between trades.";
 
@@ -98,22 +173,26 @@ export async function POST(req: Request) {
     return new Response("Invalid request", { status: 400 });
   }
 
-  const { item, watchlist = [], messages = [] } = body;
+  const { item, watchlist = [], messages = [], profile, rationale, context } = body;
   const history = await historicalEventProvider.getContext(item);
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  const banner = context === "banner";
 
   // No key → canned replies, demo keeps working (initial + follow-ups, with
-  // the same neutrality contract).
+  // the same neutrality contract; the banner path stays concise).
   if (!apiKey) {
     const lastUser = [...messages].reverse().find((m) => m.role === "user");
     const text = lastUser
       ? mockFollowUpReply(lastUser.content, item, history)
-      : mockExplanation(item, watchlist, history);
+      : banner
+        ? mockBannerBrief(item)
+        : mockExplanation(item, watchlist, history);
     return new Response(text, {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   }
 
+  const personalization = buildPersonalization(profile, rationale);
   const system = [
     SYSTEM_PROMPT_BASE,
     "",
@@ -121,11 +200,23 @@ export async function POST(req: Request) {
     buildItemContext(item, watchlist),
     "",
     formatHistory(history),
+    ...(personalization ? ["", personalization] : []),
+    ...(banner ? ["", BANNER_BRIEF_MODE] : []),
   ].join("\n");
 
-  const thread: ChatMessage[] = messages.length
-    ? messages
-    : [{ role: "user", content: INITIAL_USER_TURN }];
+  // Clients send the visible thread, which begins with the auto-generated
+  // assistant reply; the API requires a user turn first, so the implicit
+  // initial question is restored here.
+  const initialTurn: ChatMessage = {
+    role: "user",
+    content: banner ? INITIAL_BANNER_TURN : INITIAL_USER_TURN,
+  };
+  const thread: ChatMessage[] =
+    messages.length === 0
+      ? [initialTurn]
+      : messages[0].role === "assistant"
+        ? [initialTurn, ...messages]
+        : messages;
 
   try {
     const client = new Anthropic({ apiKey });
@@ -169,7 +260,9 @@ export async function POST(req: Request) {
     const lastUser = [...messages].reverse().find((m) => m.role === "user");
     const text = lastUser
       ? mockFollowUpReply(lastUser.content, item, history)
-      : mockExplanation(item, watchlist, history);
+      : banner
+        ? mockBannerBrief(item)
+        : mockExplanation(item, watchlist, history);
     return new Response(text, {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });

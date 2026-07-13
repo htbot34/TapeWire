@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { NewsItem } from "@/lib/news/types";
+import type { NewsItem, RankRationale } from "@/lib/news/types";
 import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 import { historicalEventProvider } from "@/lib/history";
@@ -63,12 +63,18 @@ function AiSkeleton() {
  */
 export default function ExplainerPanel({
   item,
+  rationale,
   onClose,
 }: {
   item: NewsItem;
+  /** Three-pillar ranking rationale when opened from a ranked briefing row. */
+  rationale?: RankRationale;
   onClose: () => void;
 }) {
   const watchlist = usePrefs((s) => s.watchlist);
+  const assetClasses = usePrefs((s) => s.assetClasses);
+  const tradingSession = usePrefs((s) => s.tradingSession);
+  const tradingStyle = usePrefs((s) => s.tradingStyle);
   const [history, setHistory] = useState<HistoricalEventContext | null>(null);
   const [mode, setMode] = useState<Mode>("api");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -89,7 +95,15 @@ export default function ExplainerPanel({
         const res = await fetch("/api/explain", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ item, watchlist, messages: thread }),
+          // Profile + rationale personalize relevance framing only — the
+          // route's neutrality directive is unchanged (no advice, ever).
+          body: JSON.stringify({
+            item,
+            watchlist,
+            messages: thread,
+            profile: { tradingSession, tradingStyle, assetClasses, watchlist },
+            rationale,
+          }),
           signal: controller.signal,
         });
         // Static hosting (GitHub Pages) has no API route at all — fall back
@@ -123,7 +137,7 @@ export default function ExplainerPanel({
         setStatus("error");
       }
     },
-    [item, watchlist],
+    [item, watchlist, assetClasses, tradingSession, tradingStyle, rationale],
   );
 
   // New item → reset the thread, load structured facts, auto-generate the
@@ -239,6 +253,42 @@ export default function ExplainerPanel({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
+          {/* ── Why this ranked for you — deterministic fact block, always
+                 ABOVE the AI sections (deterministic data never sits inside
+                 AI-labeled output) ──────────────────────────────────────── */}
+          {rationale && (
+            <div className="border-b border-ink-800/60 px-4 py-3">
+              <SectionLabel>Why this ranked for you</SectionLabel>
+              <dl className="mt-1.5 space-y-1">
+                {(
+                  [
+                    ["Your instruments", rationale.instruments],
+                    ["Market impact", rationale.impact],
+                    ["Why now", rationale.whyNow],
+                  ] as const
+                ).map(([label, text]) => (
+                  <div key={label} className="flex gap-2">
+                    <dt className="w-[112px] shrink-0 font-mono text-2xs uppercase tracking-wide text-text-low">
+                      {label}
+                    </dt>
+                    <dd className="min-w-0 flex-1 text-2xs leading-relaxed text-text-hi">
+                      {text}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              {rationale.relevancePaths.map((p) => (
+                <p key={p.display} className="tnum mt-1 font-mono text-2xs text-text-low">
+                  Relevant through: <span className="text-text-mid">{p.display}</span>
+                </p>
+              ))}
+              <p className="mt-1.5 text-2xs text-text-low">
+                Computed from your preferences and TapeWire&apos;s correlation
+                data — not AI output.
+              </p>
+            </div>
+          )}
+
           {/* ── 2 · What it is ──────────────────────────────────────────── */}
           <div className="border-b border-ink-800/60 px-4 py-3">
             <SectionLabel>What it is</SectionLabel>

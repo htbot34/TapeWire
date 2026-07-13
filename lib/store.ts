@@ -76,10 +76,12 @@ interface PrefsState {
   /** Audio tick on breaking alerts. Off by default — traders opt in. */
   breakingAudio: boolean;
   /**
-   * Focus Alert mode: when ON, Critical events use the full-takeover banner
-   * treatment; when OFF (default) they use the readable two-line format.
+   * Compact banner (opt-OUT of the default takeover): when ON, qualifying
+   * Critical alerts use the two-line format instead of the full takeover.
+   * The takeover is the v4 default — the deterministic qualification rule
+   * lives in lib/news/takeover.ts.
    */
-  focusAlertMode: boolean;
+  compactBanner: boolean;
   _hasHydrated: boolean;
 
   setOnboarded: (v: boolean) => void;
@@ -95,7 +97,7 @@ interface PrefsState {
   setProInterestEmail: (email: string) => void;
   toggleProTierInterest: (tier: string) => void;
   toggleBreakingAudio: () => void;
-  toggleFocusAlertMode: () => void;
+  toggleCompactBanner: () => void;
   applyDefaults: () => void;
   resetAll: () => void;
   setHasHydrated: (v: boolean) => void;
@@ -114,7 +116,7 @@ export const usePrefs = create<PrefsState>()(
       proInterestEmail: null,
       proTierInterest: [],
       breakingAudio: false,
-      focusAlertMode: false,
+      compactBanner: false,
       _hasHydrated: false,
 
       setOnboarded: (v) => set({ onboarded: v }),
@@ -159,7 +161,7 @@ export const usePrefs = create<PrefsState>()(
             : [...s.proTierInterest, tier],
         })),
       toggleBreakingAudio: () => set((s) => ({ breakingAudio: !s.breakingAudio })),
-      toggleFocusAlertMode: () => set((s) => ({ focusAlertMode: !s.focusAlertMode })),
+      toggleCompactBanner: () => set((s) => ({ compactBanner: !s.compactBanner })),
       applyDefaults: () =>
         set({
           assetClasses: DEFAULT_ASSET_CLASSES,
@@ -182,7 +184,7 @@ export const usePrefs = create<PrefsState>()(
           proInterestEmail: null,
           proTierInterest: [],
           breakingAudio: false,
-          focusAlertMode: false,
+          compactBanner: false,
         }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
@@ -202,7 +204,7 @@ export const usePrefs = create<PrefsState>()(
         proInterestEmail: s.proInterestEmail,
         proTierInterest: s.proTierInterest,
         breakingAudio: s.breakingAudio,
-        focusAlertMode: s.focusAlertMode,
+        compactBanner: s.compactBanner,
       }),
     },
   ),

@@ -42,7 +42,18 @@ const entry = (
   item: NewsItem,
   reactions: JournalEntry["reactions"],
   notes: string,
-  extras: Partial<Pick<JournalEntry, "trade" | "outcome" | "tags" | "relatedHistorical">> = {},
+  extras: Partial<
+    Pick<
+      JournalEntry,
+      | "trade"
+      | "behavior"
+      | "effectDuration"
+      | "initialMovePoints"
+      | "reversalPoints"
+      | "tags"
+      | "relatedHistorical"
+    >
+  > = {},
 ): JournalEntry => ({
   id: `seed-entry-${++n}`,
   folderId,
@@ -77,7 +88,10 @@ export const seedEntries: JournalEntry[] = [
     "Cooler print, shelter finally rolling over. NQ ripped ~120 pts in the first 5 minutes, faded half of it by the open. Bought the retest of the spike low — worked.",
     {
       trade: { instrument: "NQ", direction: "long", note: "bought retest of the spike low" },
-      outcome: "mixed",
+      behavior: "spike-reversal",
+      effectDuration: "30m",
+      initialMovePoints: 120,
+      reversalPoints: 60,
       tags: ["CPI", "inflation"],
       relatedHistorical: ["us-cpi"],
     },
@@ -102,7 +116,10 @@ export const seedEntries: JournalEntry[] = [
     "Dead inline. Two-sided chop for 20 minutes, then back to the pre-print range. No trade — inline CPI is a skip unless positioning is stretched.",
     {
       // observed only — no trade recorded, and that's a first-class entry
-      outcome: "faded",
+      behavior: "no-lasting-effect",
+      effectDuration: "20m",
+      initialMovePoints: 15,
+      reversalPoints: 15,
       tags: ["CPI"],
       relatedHistorical: ["us-cpi"],
     },
@@ -128,7 +145,10 @@ export const seedEntries: JournalEntry[] = [
     "Hot on headline AND core — gapped down hard, no bounce until ~11:00. Lesson: on a double-hot print don't knife-catch the first flush; wait for the 10am range to break.",
     {
       trade: { instrument: "NQ", direction: "short", note: "short the 10am range break" },
-      outcome: "held",
+      behavior: "day-bias",
+      effectDuration: "all day",
+      initialMovePoints: 160,
+      reversalPoints: 25,
       tags: ["CPI", "inflation"],
       relatedHistorical: ["us-cpi"],
     },
@@ -155,7 +175,8 @@ export const seedEntries: JournalEntry[] = [
     "Dots moved dovish. Statement pop got sold, then the real move was the grind up through Powell's presser. FOMC pattern again: fade the 2:00 spike, trade the 2:30 direction.",
     {
       trade: { instrument: "NQ", direction: "long", note: "faded the 2:00 spike, long through the presser" },
-      outcome: "held",
+      behavior: "sustained",
+      effectDuration: "2h",
       tags: ["FOMC", "rates"],
       relatedHistorical: ["fomc"],
     },
@@ -180,7 +201,8 @@ export const seedEntries: JournalEntry[] = [
     "Statement neutral but presser hawkish — 'no urgency' killed the cut trade. Faded the initial statement pop, held through the presser. Best FOMC trade this year.",
     {
       trade: { instrument: "ES", direction: "short", note: "short the statement pop into the presser" },
-      outcome: "held",
+      behavior: "day-bias",
+      effectDuration: "all day",
       tags: ["FOMC", "rates"],
       relatedHistorical: ["fomc"],
     },
@@ -209,7 +231,8 @@ export const seedEntries: JournalEntry[] = [
     "Beat and raise, DC revenue +73%. Stock +6% AH and held into next day. IV crush still ate most of the straddle even with the move — options into NVDA prints only pay on >8% moves.",
     {
       // straddle = non-directional, so recorded as observed-only
-      outcome: "held",
+      behavior: "sustained",
+      effectDuration: "into next day",
       tags: ["earnings", "NVDA", "AI"],
       relatedHistorical: ["nvda-earnings"],
     },
@@ -235,7 +258,8 @@ export const seedEntries: JournalEntry[] = [
     "Quarter fine, guide light on export-license overhang. Gap down dragged the whole semi complex. Note: NVDA guide > NVDA print for the market reaction.",
     {
       trade: { instrument: "NVDA", direction: "short", note: "shorted the first gap-fill bounce" },
-      outcome: "held",
+      behavior: "day-bias",
+      effectDuration: "all day",
       tags: ["earnings", "NVDA", "export controls"],
       relatedHistorical: ["nvda-earnings"],
     },
@@ -262,7 +286,8 @@ export const seedEntries: JournalEntry[] = [
     "Clean beat, AH pop. Bought the AH momentum — gave most of it back into next morning as year-end sellers used the liquidity. Sell-the-news risk is real even on beats.",
     {
       trade: { instrument: "NVDA", direction: "long", note: "bought AH momentum" },
-      outcome: "faded",
+      behavior: "no-lasting-effect",
+      effectDuration: "overnight",
       tags: ["earnings", "NVDA"],
       relatedHistorical: ["nvda-earnings"],
     },

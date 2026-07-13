@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { newsProvider } from "@/lib/news";
-import type { NewsItem, RankedBriefingItem } from "@/lib/news/types";
+import { compressedInstruments, newsProvider } from "@/lib/news";
+import type { NewsItem, RankRationale, RankedBriefingItem } from "@/lib/news/types";
 import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import { usePrefs } from "@/lib/store";
 import { briefingDate, dateTimeStamp, relativeTime } from "@/lib/time";
@@ -13,6 +13,7 @@ import {
   ScheduledTag,
   SourceTag,
   TickerChip,
+  WatchlistImpactTag,
 } from "./atoms";
 import ExplainerPanel from "./ExplainerPanel";
 import FeedbackControl from "./FeedbackControl";
@@ -31,11 +32,38 @@ function firstSentence(text?: string): string | null {
   return (m ? m[0] : text).trim();
 }
 
-/** "a", "a and b", "a, b, and c" — prose join for the ranked-because line. */
-function joinReasons(reasons: string[]): string {
-  if (reasons.length <= 1) return reasons[0] ?? "";
-  if (reasons.length === 2) return `${reasons[0]} and ${reasons[1]}`;
-  return `${reasons.slice(0, -1).join(", ")}, and ${reasons[reasons.length - 1]}`;
+/**
+ * The three-pillar rationale, fully labeled — expanded view only. All text
+ * is deterministic provider output (item data + prefs + correlation graph),
+ * never AI.
+ */
+function RationalePillars({ rationale }: { rationale: RankRationale }) {
+  const pillars: { label: string; text: string }[] = [
+    { label: "Your instruments", text: rationale.instruments },
+    { label: "Market impact", text: rationale.impact },
+    { label: "Why now", text: rationale.whyNow },
+  ];
+  return (
+    <div className="mt-2 border border-ink-800 bg-ink-950/40 px-3 py-2">
+      <dl className="space-y-1">
+        {pillars.map((p) => (
+          <div key={p.label} className="flex gap-2">
+            <dt className="w-[118px] shrink-0 font-mono text-2xs uppercase tracking-wide text-text-low">
+              {p.label}
+            </dt>
+            <dd className="min-w-0 flex-1 text-2xs leading-relaxed text-text-mid">
+              {p.text}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {rationale.relevancePaths.map((p) => (
+        <p key={p.display} className="tnum mt-1 font-mono text-2xs text-text-low">
+          Relevant through: <span className="text-text-mid">{p.display}</span>
+        </p>
+      ))}
+    </div>
+  );
 }
 
 function TopItem({
@@ -45,15 +73,17 @@ function TopItem({
 }: {
   ranked: RankedBriefingItem;
   rank: number;
-  onExplain: (i: NewsItem) => void;
+  onExplain: (i: NewsItem, rationale?: RankRationale) => void;
 }) {
   const item = ranked.item;
   const [expanded, setExpanded] = useState(false);
+  const watchlist = usePrefs((s) => s.watchlist);
   const inWatchlist = useWatchlistCheck();
   const byWatchlist = (a: string, b: string) =>
     Number(inWatchlist(b)) - Number(inWatchlist(a));
   const direct = [...getDirectTickers(item), ...(item.pairs ?? [])].sort(byWatchlist);
   const correlated = [...getCorrelatedTickers(item)].sort(byWatchlist);
+  const rationale = ranked.rationale;
 
   return (
     <li className="border border-ink-800 bg-ink-900/60">
@@ -83,9 +113,13 @@ function TopItem({
               <EconValues econ={item.econ} />
             </div>
           )}
-          {ranked.reasons.length > 0 && (
-            <p className="mt-1 text-2xs leading-relaxed text-text-low">
-              Ranked #{rank} because: {joinReasons(ranked.reasons)}.
+          {rationale && (
+            <p className="mt-1 text-2xs leading-relaxed">
+              <span className="text-text-mid">
+                #{rank} for you: {compressedInstruments(item, watchlist, rationale)}
+              </span>
+              <span className="text-text-low"> · </span>
+              <WatchlistImpactTag impact={rationale.watchlistImpact} />
             </p>
           )}
           {firstSentence(item.body) && (
@@ -111,7 +145,7 @@ function TopItem({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onExplain(item);
+              onExplain(item, rationale);
             }}
             className="shrink-0 rounded-sm border border-ink-700 px-1.5 font-mono text-2xs uppercase tracking-wide text-text-low hover:border-phos hover:text-phos"
             title="Intelligence about this event — definition, history, AI context"
@@ -127,6 +161,7 @@ function TopItem({
           <div className="tnum font-mono text-2xs text-text-low">
             {dateTimeStamp(item.timestamp)} · {item.eventType}
           </div>
+          {rationale && <RationalePillars rationale={rationale} />}
           {item.body && (
             <p className="mt-1.5 text-[13px] leading-relaxed text-text-mid">
               {item.body}
@@ -246,7 +281,10 @@ function CompactItem({
 export default function BriefingView() {
   const { watchlist, assetClasses, tradingSession } = usePrefs();
   const [ranked, setRanked] = useState<RankedBriefingItem[] | null>(null);
-  const [explaining, setExplaining] = useState<NewsItem | null>(null);
+  const [explaining, setExplaining] = useState<{
+    item: NewsItem;
+    rationale?: RankRationale;
+  } | null>(null);
 
   useEffect(() => {
     newsProvider
@@ -323,7 +361,7 @@ export default function BriefingView() {
                   key={r.item.id}
                   ranked={r}
                   rank={i + 1}
-                  onExplain={setExplaining}
+                  onExplain={(item, rationale) => setExplaining({ item, rationale })}
                 />
               ))}
             </ol>
@@ -335,7 +373,11 @@ export default function BriefingView() {
                 </h2>
                 <ul>
                   {rest.map((item) => (
-                    <CompactItem key={item.id} item={item} onExplain={setExplaining} />
+                    <CompactItem
+                      key={item.id}
+                      item={item}
+                      onExplain={(i) => setExplaining({ item: i })}
+                    />
                   ))}
                 </ul>
               </>
@@ -345,7 +387,11 @@ export default function BriefingView() {
       </main>
 
       {explaining && (
-        <ExplainerPanel item={explaining} onClose={() => setExplaining(null)} />
+        <ExplainerPanel
+          item={explaining.item}
+          rationale={explaining.rationale}
+          onClose={() => setExplaining(null)}
+        />
       )}
     </>
   );

@@ -13,6 +13,7 @@ const INITIAL_FILTERS: FeedFilterState = {
   watchlistOnly: true,
   impacts: [],
   eventType: "all",
+  schedule: "all",
   symbols: [],
   sourceId: "all",
 };
@@ -36,6 +37,8 @@ export default function FeedView() {
         watchlistOnly: filters.watchlistOnly,
         impacts: filters.impacts.length ? filters.impacts : undefined,
         eventTypes: filters.eventType === "all" ? undefined : [filters.eventType],
+        scheduled:
+          filters.schedule === "all" ? undefined : filters.schedule === "scheduled",
         symbols: filters.symbols.length ? filters.symbols : undefined,
         ...(selectedSource ? sourceFilterFor(selectedSource) : {}),
         customSources: sources

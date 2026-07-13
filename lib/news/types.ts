@@ -2,6 +2,8 @@
 // UI components consume these types plus the NewsProvider interface only —
 // never mock data directly. See ARCHITECTURE.md.
 
+import type { RelevancePath } from "@/lib/correlations/types";
+
 export type Impact = "high" | "medium" | "low";
 
 export type SourceType = "wire" | "outlet" | "social" | "econ-calendar";
@@ -105,17 +107,50 @@ export interface NewsItem {
 }
 
 /**
- * One briefing row: the item plus the rank score and the deterministic,
- * template-generated components of its "Ranked #N because…" line. Reasons
- * are derived only from item data + user filters — no AI call, renders
- * instantly, never fabricates.
+ * How strongly a ranked item touches THIS user's watchlist — a different
+ * question from the global Critical/Relevant/Context tier, and rendered
+ * distinctly. Always conveyed with a text label, never color alone.
+ */
+export type WatchlistImpact = "high" | "medium" | "low";
+
+export const WATCHLIST_IMPACT_LABEL: Record<WatchlistImpact, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+};
+
+/**
+ * The three-pillar ranking rationale (replaces the v3 focusReasons list).
+ * Every ranked briefing item must justify itself on exactly these pillars;
+ * generic reasoning ("this is an important economic event") is banned — an
+ * item with nothing specific to the user gets no rationale and ranks low.
+ * All three strings are computed deterministically from item data + user
+ * prefs + the correlation provider — no AI call, renders instantly, can
+ * never fabricate. Serializable by construction.
+ */
+export interface RankRationale {
+  /** Pillar 1 — why it relates to THIS user's instruments. */
+  instruments: string; // "you trade NQ during New York; CPI is a direct NQ driver via rates"
+  /** Relevance chains, populated only for indirect (correlated) hits, max 2. */
+  relevancePaths: RelevancePath[];
+  watchlistImpact: WatchlistImpact;
+  /** Pillar 2 — market impact produced (or expected, for scheduled upcoming). */
+  impact: string; // "10Y −7bp and NQ +1.3% in 30m — the largest reaction among your tracked markets"
+  /** Pillar 3 — why it remains important NOW. */
+  whyNow: string; // "released 42m ago and NQ is still repricing" / "next follow-on: Fed speakers at 10:00"
+}
+
+/**
+ * One briefing row: the item plus the rank score and the deterministic
+ * three-pillar rationale. The rationale is present only on focus items —
+ * derived from item data + user filters + the correlation graph, no AI call.
  */
 export interface RankedBriefingItem {
   item: NewsItem;
   score: number;
   /** True when the item cleared the Focus threshold (top 3–7 treatment). */
   focus: boolean;
-  reasons: string[];
+  rationale?: RankRationale;
 }
 
 // Journal entries denormalize NewsItem snapshots at save time, so items
@@ -152,6 +187,12 @@ export interface UserFilters {
   /** Optional narrowing filters set from the filter bar. */
   impacts?: Impact[];
   eventTypes?: EventType[];
+  /**
+   * Scheduled (calendar-driven) vs. unscheduled (surprise) events;
+   * undefined = both. Unscheduled is the shocks-only view — geopolitical
+   * headlines and surprise prints, with the red-folder routine filtered out.
+   */
+  scheduled?: boolean;
   /** Restrict to specific symbols (subset of watchlist chips clicked in the UI). */
   symbols?: string[];
   /** Restrict to specific source names (e.g. "Reuters", or a custom source's stored name). */

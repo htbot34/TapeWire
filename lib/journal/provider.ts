@@ -24,7 +24,16 @@ export interface JournalProvider {
     patch: Partial<
       Pick<
         JournalEntry,
-        "notes" | "reactions" | "folderId" | "trade" | "outcome" | "tags"
+        | "notes"
+        | "reactions"
+        | "folderId"
+        | "trade"
+        | "behavior"
+        | "effectDuration"
+        | "initialMovePoints"
+        | "reversalPoints"
+        | "screenshots"
+        | "tags"
       >
     >,
   ): Promise<JournalEntry | null>;

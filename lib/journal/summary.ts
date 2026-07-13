@@ -1,4 +1,4 @@
-import type { JournalEntry } from "./types";
+import type { JournalEntry, MoveBehavior } from "./types";
 
 const pctOfMove = (move: string): number | null => {
   const m = move.match(/-?\d+(?:\.\d+)?(?=\s*%)/);
@@ -9,8 +9,8 @@ export interface FolderStats {
   entryCount: number;
   /** Per-instrument average absolute % move, most-recorded instruments first. */
   avgMoves: { instrument: string; avgAbsPct: number; count: number }[];
-  /** Outcome split over entries where the trader recorded one. */
-  outcomes: { held: number; faded: number; mixed: number; recorded: number };
+  /** Behavior counts over entries where the trader recorded one. */
+  behaviors: { counts: Partial<Record<MoveBehavior, number>>; recorded: number };
   /** Largest recorded absolute % move across all entries, with its date. */
   biggest: { instrument: string; move: string; interval: string; date: string } | null;
 }
@@ -54,15 +54,67 @@ export function folderStats(entries: JournalEntry[]): FolderStats | null {
     .sort((a, b) => b.count - a.count || b.avgAbsPct - a.avgAbsPct)
     .slice(0, 3);
 
-  const outcomes = { held: 0, faded: 0, mixed: 0, recorded: 0 };
+  const behaviors: FolderStats["behaviors"] = { counts: {}, recorded: 0 };
   for (const e of entries) {
-    if (e.outcome) {
-      outcomes[e.outcome] += 1;
-      outcomes.recorded += 1;
+    if (e.behavior) {
+      behaviors.counts[e.behavior] = (behaviors.counts[e.behavior] ?? 0) + 1;
+      behaviors.recorded += 1;
     }
   }
 
-  return { entryCount: entries.length, avgMoves, outcomes, biggest };
+  return { entryCount: entries.length, avgMoves, behaviors, biggest };
+}
+
+/**
+ * The plain-English points sentence — the advisor's language ("manipulated
+ * 30 points then reversed 140"), computed strictly from user-recorded
+ * `initialMovePoints`/`reversalPoints`. Null under 3 recorded entries; the
+ * folder header then falls back to the % stats block.
+ */
+export function pointsSentence(entries: JournalEntry[]): string | null {
+  const withPoints = entries.filter((e) => typeof e.initialMovePoints === "number");
+  if (withPoints.length < 3) return null;
+  const avgInitial =
+    withPoints.reduce((s, e) => s + Math.abs(e.initialMovePoints!), 0) /
+    withPoints.length;
+  const withReversal = withPoints.filter(
+    (e) => typeof e.reversalPoints === "number",
+  );
+  const avgReversal = withReversal.length
+    ? withReversal.reduce((s, e) => s + Math.abs(e.reversalPoints!), 0) /
+      withReversal.length
+    : null;
+  const base = `On the drop this event moves ~${Math.round(avgInitial)} pts on average`;
+  const reversal =
+    avgReversal !== null ? `, then reverses ~${Math.round(avgReversal)} pts` : "";
+  return `${base}${reversal} (based on ${withPoints.length} recorded events).`;
+}
+
+/** "set the day's bias" phrasing per behavior, for the distribution sentence. */
+const BEHAVIOR_PHRASE: Record<MoveBehavior, string> = {
+  "spike-reversal": "spiked and reversed within minutes",
+  "reversal-return": "reversed then returned to the level",
+  sustained: "sustained through the session",
+  "day-bias": "set the day's bias",
+  "no-lasting-effect": "had no lasting effect",
+  unclear: "were unclear",
+};
+
+/**
+ * "4 of 6 set the day's bias." — the most-recorded behavior across the
+ * folder, user-recorded data only. Null when fewer than 2 entries carry one.
+ */
+export function behaviorSentence(entries: JournalEntry[]): string | null {
+  const counts = new Map<MoveBehavior, number>();
+  let recorded = 0;
+  for (const e of entries) {
+    if (!e.behavior) continue;
+    counts.set(e.behavior, (counts.get(e.behavior) ?? 0) + 1);
+    recorded += 1;
+  }
+  if (recorded < 2) return null;
+  const [top, n] = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0];
+  return `${n} of ${recorded} ${BEHAVIOR_PHRASE[top]}.`;
 }
 
 /**

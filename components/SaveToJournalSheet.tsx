@@ -5,19 +5,24 @@ import type { MarketReaction, NewsItem } from "@/lib/news/types";
 import { getDirectTickers } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 import { historicalEventProvider, historyKeyFor } from "@/lib/history";
-import type { JournalFolder, JournalOutcome } from "@/lib/journal";
+import type { JournalFolder, JournalScreenshot, MoveBehavior } from "@/lib/journal";
 import {
-  OUTCOME_LABEL,
+  BEHAVIOR_DESCRIPTION,
+  BEHAVIOR_LABEL,
+  JournalStorageFullError,
+  MOVE_BEHAVIORS,
   SUGGESTED_TAGS,
   folderIdForName,
   journalProvider,
   suggestFolderName,
 } from "@/lib/journal";
+import { downscaleImageToDataUrl } from "@/lib/image";
 import { dateTimeStamp } from "@/lib/time";
 
 const NEW_FOLDER = "__new__";
 
-const OUTCOMES: JournalOutcome[] = ["held", "faded", "mixed"];
+/** Screenshot cap per entry — a localStorage-quota constraint (see provider). */
+const MAX_SCREENSHOTS = 3;
 
 /** Default tag suggested from the item (matches the folder suggestion). */
 function suggestTag(item: NewsItem): string | null {
@@ -39,9 +44,10 @@ function suggestTag(item: NewsItem): string | null {
 
 /**
  * Compact capture sheet — the core Replay input. Folder auto-suggested,
- * reactions pre-filled (with intervals), and the v3 fields are all optional
- * one-tap toggles: direction, held/faded, tag chips. Saving stays a <10s
- * action; "observed only" (no trade) is a first-class entry.
+ * reactions pre-filled (with intervals), the duration-behavior taxonomy and
+ * points fields are optional one-tap/one-number inputs, and the flow ends on
+ * notes + chart screenshots. Saving stays a fast action; "observed only"
+ * (no trade) is a first-class entry.
  */
 export default function SaveToJournalSheet({
   item,
@@ -65,7 +71,13 @@ export default function SaveToJournalSheet({
   const [tradeInstrument, setTradeInstrument] = useState(
     item.marketReaction?.[0]?.instrument ?? getDirectTickers(item)[0] ?? "",
   );
-  const [outcome, setOutcome] = useState<JournalOutcome | null>(null);
+  const [behavior, setBehavior] = useState<MoveBehavior | null>(null);
+  const [effectDuration, setEffectDuration] = useState("");
+  const [initialPts, setInitialPts] = useState("");
+  const [reversalPts, setReversalPts] = useState("");
+  const [screenshots, setScreenshots] = useState<JournalScreenshot[]>([]);
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const [storageFull, setStorageFull] = useState(false);
   const [tags, setTags] = useState<string[]>(() => {
     const t = suggestTag(item);
     return t ? [t] : [];
@@ -104,9 +116,37 @@ export default function SaveToJournalSheet({
   const setReaction = (i: number, patch: Partial<MarketReaction>) =>
     setReactions((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
+  const attachScreenshots = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setAttachError(null);
+    const room = MAX_SCREENSHOTS - screenshots.length;
+    const picked = Array.from(files).slice(0, Math.max(0, room));
+    if (files.length > picked.length) {
+      setAttachError(`Up to ${MAX_SCREENSHOTS} screenshots per entry.`);
+    }
+    for (const file of picked) {
+      try {
+        const dataUrl = await downscaleImageToDataUrl(file);
+        setScreenshots((cur) =>
+          cur.length >= MAX_SCREENSHOTS
+            ? cur
+            : [...cur, { dataUrl, addedAt: new Date().toISOString() }],
+        );
+      } catch {
+        setAttachError(`Couldn't read ${file.name} — is it an image?`);
+      }
+    }
+  };
+
+  const parsePts = (v: string): number | undefined => {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? Math.abs(n) : undefined;
+  };
+
   const save = async () => {
     if (saving) return;
     setSaving(true);
+    setStorageFull(false);
     try {
       let targetId = folderId;
       if (folderId === NEW_FOLDER) {
@@ -127,11 +167,20 @@ export default function SaveToJournalSheet({
           direction && tradeInstrument.trim()
             ? { instrument: tradeInstrument.trim().toUpperCase(), direction }
             : undefined,
-        outcome: outcome ?? undefined,
+        behavior: behavior ?? undefined,
+        effectDuration: effectDuration.trim() || undefined,
+        initialMovePoints: parsePts(initialPts),
+        reversalPoints: parsePts(reversalPts),
+        screenshots: screenshots.length ? screenshots : undefined,
         tags,
         relatedHistorical: historyKey ? [historyKey] : undefined,
       });
       onClose();
+    } catch (err) {
+      // Storage full — keep the sheet open so nothing typed is lost, and
+      // suggest removing a screenshot (the usual quota culprit).
+      if (err instanceof JournalStorageFullError) setStorageFull(true);
+      else throw err;
     } finally {
       setSaving(false);
     }
@@ -290,26 +339,65 @@ export default function SaveToJournalSheet({
             </div>
           </div>
 
-          {/* Outcome — did the move hold or fade */}
+          {/* What the move did — duration-behavior taxonomy */}
           <div>
             <label className="font-mono text-2xs uppercase tracking-widest text-text-low">
-              Move outcome <span className="normal-case tracking-normal">(optional)</span>
+              What the move did{" "}
+              <span className="normal-case tracking-normal">(optional)</span>
             </label>
-            <div className="mt-1.5 flex items-center gap-1.5">
-              {OUTCOMES.map((o) => (
+            <div className="mt-1.5 space-y-1">
+              {MOVE_BEHAVIORS.map((b) => (
                 <button
-                  key={o}
-                  onClick={() => setOutcome((cur) => (cur === o ? null : o))}
-                  className={`rounded-sm border px-2.5 py-1 font-mono text-xs uppercase tracking-wider ${
-                    outcome === o
-                      ? "border-phos/60 bg-phos-faint text-phos"
-                      : "border-ink-700 text-text-low hover:text-text-mid"
+                  key={b}
+                  onClick={() => setBehavior((cur) => (cur === b ? null : b))}
+                  className={`block w-full border px-2.5 py-1.5 text-left ${
+                    behavior === b
+                      ? "border-phos/60 bg-phos-faint"
+                      : "border-ink-700 hover:border-ink-800"
                   }`}
-                  aria-pressed={outcome === o}
+                  aria-pressed={behavior === b}
                 >
-                  {OUTCOME_LABEL[o]}
+                  <span
+                    className={`font-mono text-xs font-semibold ${
+                      behavior === b ? "text-phos" : "text-text-hi"
+                    }`}
+                  >
+                    {BEHAVIOR_LABEL[b]}
+                  </span>
+                  <span className="ml-2 text-2xs text-text-mid">
+                    {BEHAVIOR_DESCRIPTION[b]}
+                  </span>
                 </button>
               ))}
+            </div>
+            {/* Points + duration — the advisor's units */}
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 font-mono text-2xs text-text-mid">
+              <span>moved</span>
+              <input
+                value={initialPts}
+                onChange={(e) => setInitialPts(e.target.value)}
+                placeholder="30"
+                inputMode="decimal"
+                className="tnum w-16 border border-ink-700 bg-ink-950 px-2 py-1 text-xs text-text-hi placeholder:text-text-low focus:border-phos focus:outline-none"
+                aria-label="Initial move in points"
+              />
+              <span>pts on the drop · reversed</span>
+              <input
+                value={reversalPts}
+                onChange={(e) => setReversalPts(e.target.value)}
+                placeholder="140"
+                inputMode="decimal"
+                className="tnum w-16 border border-ink-700 bg-ink-950 px-2 py-1 text-xs text-text-hi placeholder:text-text-low focus:border-phos focus:outline-none"
+                aria-label="Reversal in points"
+              />
+              <span>pts · effect lasted</span>
+              <input
+                value={effectDuration}
+                onChange={(e) => setEffectDuration(e.target.value)}
+                placeholder="5m, 30m, all day"
+                className="w-28 border border-ink-700 bg-ink-950 px-2 py-1 text-xs text-text-hi placeholder:text-text-low focus:border-phos focus:outline-none"
+                aria-label="Effect duration"
+              />
             </div>
           </div>
 
@@ -350,7 +438,7 @@ export default function SaveToJournalSheet({
             </div>
           </div>
 
-          {/* Notes */}
+          {/* Final step: notes + chart screenshots — the save flow ends here */}
           <div>
             <label className="font-mono text-2xs uppercase tracking-widest text-text-low">
               Notes
@@ -362,6 +450,50 @@ export default function SaveToJournalSheet({
               placeholder="Came in hotter than forecast, NQ pumped 200 points into the open…"
               className="mt-1.5 w-full resize-y border border-ink-700 bg-ink-950 px-2 py-1.5 text-xs leading-relaxed text-text-hi placeholder:text-text-low focus:border-phos focus:outline-none"
             />
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {screenshots.map((s, i) => (
+                <span key={s.addedAt + i} className="relative inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={s.dataUrl}
+                    alt={`Chart screenshot ${i + 1}`}
+                    className="h-14 w-20 border border-ink-700 object-cover"
+                  />
+                  <button
+                    onClick={() =>
+                      setScreenshots((cur) => cur.filter((_, idx) => idx !== i))
+                    }
+                    className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-ink-700 bg-ink-950 font-mono text-2xs text-text-low hover:text-impact-high"
+                    aria-label={`Remove screenshot ${i + 1}`}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+              {screenshots.length < MAX_SCREENSHOTS && (
+                <label className="cursor-pointer border border-ink-700 px-2.5 py-1.5 font-mono text-2xs text-text-mid hover:border-phos hover:text-phos">
+                  + Attach chart screenshot
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      void attachScreenshots(e.target.files);
+                      e.target.value = "";
+                    }}
+                    aria-label="Attach chart screenshot"
+                  />
+                </label>
+              )}
+            </div>
+            {attachError && (
+              <p className="mt-1 text-2xs text-impact-med">{attachError}</p>
+            )}
+            <p className="mt-1 text-2xs text-text-low">
+              Up to {MAX_SCREENSHOTS}, downscaled on-device. Prototype stores
+              them locally; production moves screenshots to cloud storage.
+            </p>
           </div>
 
           {history && (
@@ -373,6 +505,13 @@ export default function SaveToJournalSheet({
           )}
         </div>
 
+        {storageFull && (
+          <p className="border-t border-impact-med/40 bg-impact-med/10 px-4 py-2 text-xs text-impact-med">
+            Local storage is full — this entry couldn&apos;t be saved. Remove a
+            screenshot (they take the most space) or delete old entries, then
+            save again. Nothing you typed was lost.
+          </p>
+        )}
         <div className="flex items-center justify-end gap-2 border-t border-ink-800 px-4 py-3">
           <button
             onClick={onClose}
