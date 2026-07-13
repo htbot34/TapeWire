@@ -17,14 +17,73 @@ export interface JournalTrade {
   note?: string;
 }
 
-/** Did the recorded move hold, fade, or a bit of both. */
-export type JournalOutcome = "held" | "faded" | "mixed";
+/**
+ * What the move DID over time — the trader-feedback taxonomy that replaces
+ * the v3 held/faded/mixed outcome. Duration-behavior, not direction: the
+ * advisor thinks in "manipulated 30 points then reversed 140" terms.
+ */
+export type MoveBehavior =
+  | "spike-reversal" // moved on the drop, reversed within minutes
+  | "reversal-return" // reversed for ~30m+, then returned to the level later in the day
+  | "sustained" // move continued through the session
+  | "day-bias" // set the directional bias for the whole day (NFP-style)
+  | "no-lasting-effect"
+  | "unclear";
 
-export const OUTCOME_LABEL: Record<JournalOutcome, string> = {
-  held: "Held",
-  faded: "Faded",
-  mixed: "Mixed",
+export const BEHAVIOR_LABEL: Record<MoveBehavior, string> = {
+  "spike-reversal": "Spike & reversal",
+  "reversal-return": "Reversal, then return",
+  sustained: "Sustained",
+  "day-bias": "Set the day's bias",
+  "no-lasting-effect": "No lasting effect",
+  unclear: "Unclear",
 };
+
+/** Compact mono tags for dense table rows. */
+export const BEHAVIOR_TAG: Record<MoveBehavior, string> = {
+  "spike-reversal": "SPIKE-REV",
+  "reversal-return": "REV-RETURN",
+  sustained: "SUSTAINED",
+  "day-bias": "DAY BIAS",
+  "no-lasting-effect": "NO EFFECT",
+  unclear: "UNCLEAR",
+};
+
+/** Plain-language descriptions shown next to the options in the save sheet. */
+export const BEHAVIOR_DESCRIPTION: Record<MoveBehavior, string> = {
+  "spike-reversal": "moved on the drop, reversed within minutes",
+  "reversal-return": "reversed for ~30m+, then returned to the level later in the day",
+  sustained: "move continued through the session",
+  "day-bias": "set the directional bias for the whole day (NFP-style)",
+  "no-lasting-effect": "no meaningful follow-through either way",
+  unclear: "hard to call — chopped or overlapped with other drivers",
+};
+
+export const MOVE_BEHAVIORS: MoveBehavior[] = [
+  "spike-reversal",
+  "reversal-return",
+  "sustained",
+  "day-bias",
+  "no-lasting-effect",
+  "unclear",
+];
+
+/**
+ * v3 → v4 migration of persisted entries (no data loss): the binary outcome
+ * maps onto the closest behavior.
+ */
+export const LEGACY_OUTCOME_TO_BEHAVIOR: Record<string, MoveBehavior> = {
+  held: "sustained",
+  faded: "spike-reversal",
+  mixed: "unclear",
+};
+
+/** One attached chart screenshot, downscaled client-side at attach time. */
+export interface JournalScreenshot {
+  dataUrl: string;
+  addedAt: string; // ISO
+  caption?: string;
+}
 
 /** Default tag chips offered in the save sheet; free tags are always allowed. */
 export const SUGGESTED_TAGS = [
@@ -56,8 +115,20 @@ export interface JournalEntry {
   notes: string;
   /** What the trader did — optional, observed-only entries are first-class. */
   trade?: JournalTrade;
-  /** Whether the recorded move held or faded (often set after the fact). */
-  outcome?: JournalOutcome;
+  /** What the move did over time (often set after the fact). */
+  behavior?: MoveBehavior;
+  /** How long the effect lasted — free interval like "5m", "30m", "all day". */
+  effectDuration?: string;
+  /** Points the move ran on the drop — the advisor's unit ("moved 30 pts"). */
+  initialMovePoints?: number;
+  /** Points it then reversed ("…then reversed 140"). */
+  reversalPoints?: number;
+  /**
+   * Attached chart screenshots (≤3, downscaled to ≤1280px / JPEG ~0.8).
+   * Stored as data URLs through the local provider — a prototype constraint;
+   * production moves these to object storage (see localProvider.ts).
+   */
+  screenshots?: JournalScreenshot[];
   /** Free tags plus suggested defaults (CPI, FOMC, earnings…). */
   tags: string[];
   /**

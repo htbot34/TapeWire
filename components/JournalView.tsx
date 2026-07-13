@@ -5,22 +5,34 @@ import type { NewsItem } from "@/lib/news/types";
 import { getCorrelatedTickers, getDirectTickers } from "@/lib/news/types";
 import type { HistoricalEventContext } from "@/lib/history";
 import { historicalEventProvider, historyKeyFor } from "@/lib/history";
-import type { JournalEntry, JournalFolder, JournalOutcome } from "@/lib/journal";
+import type { JournalEntry, JournalFolder, MoveBehavior } from "@/lib/journal";
 import {
-  OUTCOME_LABEL,
+  BEHAVIOR_LABEL,
+  BEHAVIOR_TAG,
+  MOVE_BEHAVIORS,
+  behaviorSentence,
   folderStats,
   folderSummary,
   journalProvider,
+  pointsSentence,
 } from "@/lib/journal";
 import { dateTimeStamp, shortDate } from "@/lib/time";
 import { ImpactTag, MoveText, TickerChip } from "./atoms";
 import ExplainerPanel from "./ExplainerPanel";
 import HistoricalTable from "./HistoricalTable";
 
-const OUTCOMES: JournalOutcome[] = ["held", "faded", "mixed"];
-
-function outcomeColor(o: JournalOutcome): string {
-  return o === "held" ? "text-pos" : o === "faded" ? "text-neg" : "text-impact-med";
+function behaviorColor(b: MoveBehavior): string {
+  switch (b) {
+    case "sustained":
+    case "day-bias":
+      return "text-pos";
+    case "spike-reversal":
+      return "text-neg";
+    case "reversal-return":
+      return "text-impact-med";
+    default:
+      return "text-text-mid";
+  }
 }
 
 /** "Actual +0.1% vs +0.2% exp" — the surprise cell, only when recorded. */
@@ -91,10 +103,12 @@ function EntryRow({
     setEditing(false);
   };
 
-  const setOutcome = (o: JournalOutcome) =>
-    journalProvider.updateEntry(entry.id, {
-      outcome: entry.outcome === o ? undefined : o,
-    });
+  const setBehavior = (b: MoveBehavior) =>
+    journalProvider
+      .updateEntry(entry.id, {
+        behavior: entry.behavior === b ? undefined : b,
+      })
+      .catch(() => {}); // quota failure on a toggle: leave the entry as-is
 
   const surprise = surpriseText(entry.item);
 
@@ -122,11 +136,12 @@ function EntryRow({
           )}
         </span>
         <span
-          className={`w-[46px] shrink-0 text-right font-mono text-2xs font-semibold uppercase ${
-            entry.outcome ? outcomeColor(entry.outcome) : "text-text-low"
+          className={`w-[76px] shrink-0 truncate text-right font-mono text-2xs font-semibold uppercase ${
+            entry.behavior ? behaviorColor(entry.behavior) : "text-text-low"
           }`}
+          title={entry.behavior ? BEHAVIOR_LABEL[entry.behavior] : undefined}
         >
-          {entry.outcome ? OUTCOME_LABEL[entry.outcome] : "—"}
+          {entry.behavior ? BEHAVIOR_TAG[entry.behavior] : "—"}
         </span>
         <span className="hidden w-[136px] shrink-0 items-baseline justify-end gap-1 overflow-hidden md:flex">
           {entry.tags.slice(0, 2).map((t) => (
@@ -176,27 +191,44 @@ function EntryRow({
               <span className="font-mono text-2xs text-text-low">observed only — no trade recorded</span>
             )}
             <span
-              className="ml-auto flex items-center gap-1"
+              className="ml-auto flex flex-wrap items-center justify-end gap-1"
               onClick={(e) => e.stopPropagation()}
             >
-              <span className="font-mono text-2xs text-text-low">outcome:</span>
-              {OUTCOMES.map((o) => (
+              <span className="font-mono text-2xs text-text-low">behavior:</span>
+              {MOVE_BEHAVIORS.map((b) => (
                 <button
-                  key={o}
-                  onClick={() => setOutcome(o)}
+                  key={b}
+                  onClick={() => setBehavior(b)}
                   className={`rounded-sm border px-1.5 py-px font-mono text-2xs uppercase ${
-                    entry.outcome === o
-                      ? `border-current ${outcomeColor(o)}`
+                    entry.behavior === b
+                      ? `border-current ${behaviorColor(b)}`
                       : "border-ink-700 text-text-low hover:text-text-mid"
                   }`}
-                  aria-pressed={entry.outcome === o}
-                  title={`Mark move as ${OUTCOME_LABEL[o]}${entry.outcome === o ? " (click to clear)" : ""}`}
+                  aria-pressed={entry.behavior === b}
+                  title={`${BEHAVIOR_LABEL[b]}${entry.behavior === b ? " (click to clear)" : ""}`}
                 >
-                  {OUTCOME_LABEL[o]}
+                  {BEHAVIOR_TAG[b]}
                 </button>
               ))}
             </span>
           </div>
+          {(entry.effectDuration ||
+            entry.initialMovePoints !== undefined ||
+            entry.reversalPoints !== undefined) && (
+            <p className="tnum mt-1 font-mono text-2xs text-text-mid">
+              {[
+                entry.initialMovePoints !== undefined
+                  ? `moved ${entry.initialMovePoints} pts`
+                  : null,
+                entry.reversalPoints !== undefined
+                  ? `reversed ${entry.reversalPoints} pts`
+                  : null,
+                entry.effectDuration ? `effect: ${entry.effectDuration}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
 
           {entry.tags.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
@@ -393,7 +425,8 @@ function StatsHeader({ entries }: { entries: JournalEntry[] }) {
       </p>
     ) : null;
   }
-  const { avgMoves, outcomes, biggest } = stats;
+  const { avgMoves, biggest } = stats;
+  const behaviorLine = behaviorSentence(entries);
   return (
     <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 border border-ink-800 bg-ink-900/60 px-3 py-2.5">
       <div>
@@ -415,18 +448,13 @@ function StatsHeader({ entries }: { entries: JournalEntry[] }) {
           </div>
         </div>
       ))}
-      {outcomes.recorded > 0 && (
+      {behaviorLine && (
         <div>
           <div className="font-mono text-2xs uppercase tracking-widest text-text-low">
-            Held / Faded
+            Behavior
           </div>
-          <div className="tnum mt-0.5 font-mono text-sm font-semibold">
-            <span className="text-pos">{outcomes.held}</span>
-            <span className="text-text-low"> / </span>
-            <span className="text-neg">{outcomes.faded}</span>
-            {outcomes.mixed > 0 && (
-              <span className="text-2xs font-normal text-text-low"> +{outcomes.mixed} mixed</span>
-            )}
+          <div className="mt-0.5 text-sm font-semibold text-text-hi">
+            {behaviorLine}
           </div>
         </div>
       )}
@@ -579,7 +607,7 @@ export default function JournalView() {
                   <span className="w-[52px] shrink-0">Date</span>
                   <span className="hidden w-[168px] shrink-0 sm:inline">Surprise</span>
                   <span className="min-w-0 flex-1">Recorded reactions</span>
-                  <span className="w-[46px] shrink-0 text-right">Move</span>
+                  <span className="w-[76px] shrink-0 text-right">Behavior</span>
                   <span className="hidden w-[136px] shrink-0 text-right md:inline">Tags</span>
                 </div>
                 <ul>
