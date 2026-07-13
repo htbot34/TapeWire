@@ -58,6 +58,43 @@ fact-vs-inference contract (statements are labeled `Fact:` / `Inference:`).
 Asking "should I short NQ?" gets a context-not-advice redirect; this holds
 in the canned path too — try it.
 
+## New in v4 (trader-feedback build)
+
+One line per new surface:
+
+- **Landing page** — first-run visitors get "Your market, already filtered."
+  with a 60-second-setup CTA and a skip-to-demo shortcut; returning users go
+  straight to the tape.
+- **Three-pillar ranking rationale** — every Focus item justifies itself on
+  *your instruments / market impact / why now* (deterministic; generic
+  reasons are structurally impossible), with a watchlist-impact label and
+  "Relevant through: NVDA → semiconductors → NQ" chains.
+- **Correlation graph provider** (`lib/correlations/`) — the maintained
+  dataset behind those chains; BFS max depth 3, dev-asserted reachability.
+- **Scheduled / Unscheduled filter** — one click on the filter bar to see
+  only calendar events or only shocks.
+- **Default takeover banner** — qualifying Critical alerts take over by
+  default under a published deterministic rule (compact banner is the
+  opt-out), with **False alarm / Useful** feedback that will tune the
+  thresholds.
+- **Banner Explain thread** — an inline chat panel on the takeover whose
+  first message is an automatic 2–3 sentence factual AI brief.
+- **Replay behaviors** — the binary held/faded becomes a six-value
+  duration-behavior taxonomy plus points fields ("moved 30, reversed 140")
+  and effect duration; legacy entries migrate losslessly.
+- **Chart screenshots** — up to 3 per entry, downscaled on-device, with a
+  folder-side rail of the last five and a full-notes lightbox.
+- **Folder stats in plain English** — "On the drop this event moves ~32 pts
+  on average, then reverses ~141 pts (based on 6 recorded events)." plus a
+  behavior distribution, from user-recorded data only.
+- **Month dots** (`MonthDots`) — a per-folder month calendar with red
+  occurrence dots from entries + the calendar provider.
+- **Red / orange / yellow impact palette** — the universal trader
+  convention, contrast-checked; labels unchanged, color never alone.
+- **Core demo fake door** — "Try the Core demo" interest capture on the
+  pricing modal (production requires abuse-resistant demo access, see
+  ARCHITECTURE.md).
+
 ## 3-minute v3 demo script
 
 Run this in front of a design partner, in order:
@@ -74,11 +111,12 @@ Run this in front of a design partner, in order:
    groups**, the **CORRECTED** tag on the TSLA recall tweet, and the quiet
    **⋯ feedback control** (Useful · Not relevant · Wrong asset · Wrong
    catalyst — the future ranking engine's training data).
-3. **⚡ Breaking, both modes (0:50–1:10).** Press ⚡: the **two-line
-   default** — BREAKING · time · instruments, then the headline, double
-   flash, auto-settles in ~45s. Flip **Focus Alert mode** in Settings, press
-   ⚡ again: full takeover. The first scenario is the semiconductor
-   export-restrictions headline.
+3. **⚡ Breaking, both modes (0:50–1:10).** Press ⚡: qualifying Critical
+   alerts now take over by **default** (double flash, Explain brief, False
+   alarm / Useful) — the first scenario is the semiconductor
+   export-restrictions headline. Flip **Compact banner** in Settings for
+   the two-line treatment; non-qualifying alerts (e.g. the unconfirmed
+   Musk tweet) stay two-line automatically.
 4. **Explain panel (1:10–1:40).** Hit **Explain** on the CPI print. Walk
    the fixed section order: Raw event (with source latency line) → What it
    is → Why markets care → Instruments affected (direct/correlated) →
@@ -91,17 +129,21 @@ Run this in front of a design partner, in order:
    signals item: **"No verified news catalyst"** — the honest negative is
    the trust feature. Both badged PREVIEW.
 6. **Save to journal (1:55–2:15).** → on the CPI row: folder suggested,
-   reactions + intervals pre-filled, tap **Long**, tap **Held/Faded**, tag
-   chips, save — under 10 seconds, and "observed only" is valid.
+   reactions + intervals pre-filled, tap **Long**, pick a **move behavior**
+   (spike & reversal / day bias / …), points + duration, tag chips, notes +
+   optional chart screenshot last — and "observed only" is valid.
 7. **Journal → Replay (2:15–2:40).** *The flagship.* Journal tab (second
-   in the nav) → open **CPI**: the **Replay** view — stats header computed
-   only from recorded entries ("Avg |NQ| 1.2% across 3 · Held/Faded split ·
-   biggest move with date"), dense table (date · surprise · reactions ·
-   outcome · tags), and inside an entry the **related-historical table** —
-   "the last soft CPIs and how NQ reacted" next to what *you* recorded.
+   in the nav) → open **CPI**: the **Replay** view — the plain-English
+   points sentence ("moves ~98 pts on the drop, then reverses ~33 …"),
+   behavior distribution, dense table (date · surprise · reactions ·
+   behavior · tags), chart rail + month dots, and inside an entry the
+   **related-historical table** — "the last soft CPIs and how NQ reacted"
+   next to what *you* recorded.
 8. **Your Focus briefing (2:40–2:55).** Briefing tab: "Your Focus — ranked
    for your market", 3–7 items by score threshold (never padded), each with
-   its deterministic **"Ranked #N because…"** line, actual/exp/prev inline,
+   its deterministic **three-pillar rationale** (#1 for you: direct NQ
+   driver · Impact on your watchlist: High; expand for all three pillars
+   and the relevance chains), actual/exp/prev inline,
    Scheduled/Unscheduled tags. Quiet-night handling intact.
 9. **Calendar + pricing (2:55–3:00).** Calendar with the same impact
    labels and Explain buttons. Finish on **Pro**: "Would you use TapeWire at

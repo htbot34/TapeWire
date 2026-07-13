@@ -38,6 +38,12 @@ The prototype is structured so that swapping mock data for real feeds touches
   that file**. Components never import mock data directly. The one dev-only
   exception is `simulateBreakingNews()` (the header ⚡ button), exported from
   `lib/news/index.ts` and documented as mock-only.
+- `lib/correlations/` (v4) — `CorrelationProvider.getPaths(from, to)` over
+  the maintained correlation graph; see the correlation-graph section below.
+- App entry gate (v4): `app/page.tsx` gates on the persisted onboarding
+  flag — first-run visitors see `components/Landing.tsx`; once
+  `onboarded` is set (by onboarding's finish/skip or the landing's
+  skip-to-demo), the tape renders directly.
 - `lib/news/types.ts` — `NewsItem` is the wire contract: raw headline,
   source + source type, ISO timestamp, impact tier, ticker/pair tags, event
   type, source URL, optional body and `marketReaction`.
@@ -68,6 +74,109 @@ The prototype is structured so that swapping mock data for real feeds touches
   historical data) and grounds the model on the structured
   `HistoricalEventContext` so it cannot invent dates or magnitudes. The
   canned fallback enforces the same contract.
+
+## The correlation graph (`lib/correlations/` — v4)
+
+A typed relationship graph behind the same provider pattern as every other
+data domain:
+
+- **Shape.** `CorrelationEdge { from, to, kind, label? }` where kind ∈
+  `member-of · weights · macro-driver · inverse · proxy`; nodes are tickers
+  (`NVDA`), FX pairs, group ids (`semiconductors`, `rates`) and macro-event
+  nodes (`CPI`, `FOMC`, `NFP`). `RelevancePath { nodes, display }` is the
+  renderable chain ("NVDA → semiconductors → NQ").
+- **Pathfinding.** `getPaths(from, to)` runs a multi-source BFS, undirected
+  traversal (relevance flows both ways along a relationship), **max depth 3
+  edges**, shortest path per reachable target, ties broken deterministically
+  by seed edge order — same inputs, same chains, always.
+- **Reachability invariant.** Every `correlatedTickers` entry in the mock
+  news data must be reachable from that item's `directTickers`; a dev-time
+  assertion in `mockProvider.ts` throws on violation, so a new mock item
+  cannot ship an untraceable correlation. Items with no direct tickers are
+  skipped (no chain origin).
+- **Production sourcing.** This is a maintained dataset — curated symbology
+  and sector/macro relationships, versioned and reviewed like the historical
+  events database. It is **never AI-generated at request time**: every chain
+  shown to a user must be traceable data.
+
+## Three-pillar ranking rationale (v4 — replaces "Ranked #N because…")
+
+Every Focus item carries a `RankRationale` with exactly three pillars, all
+computed deterministically in the news provider (item data + user prefs +
+correlation graph + curated historical/calendar data — no AI call, instant
+render, cannot fabricate):
+
+1. **`instruments`** — why it relates to THIS user's instruments: direct
+   watchlist hit (with session flavor) > correlated hit (with the chain) >
+   asset-class match. **The no-generic-reasons rule is structural**: an item
+   with none of these gets NO rationale, is demoted in scoring, and can
+   never be a Focus item — "this is an important economic event" cannot be
+   emitted.
+2. **`impact`** — the biggest recorded `MarketReaction`s with their
+   intervals, plus a comparative clause on exactly one item (the largest
+   move across the ranked set). Items without a reaction fall back to the
+   historical provider's typical-reaction data, phrased explicitly as
+   historical.
+3. **`whyNow`** — deterministic from timestamps and calendar data: minutes
+   since release, the next related scheduled event ("next follow-on: …"),
+   or the session-bias framing for red-folder prints.
+
+`relevancePaths` (max 2) accompany indirect hits and render as
+"Relevant through: …" — in the briefing's expanded view and as a fact block
+ABOVE the AI sections in the Explain panel (deterministic data never sits
+inside AI-labeled output). The rationale and trader profile are also sent to
+`/api/explain` as personalization context; the neutrality directive is
+untouched.
+
+### watchlistImpact
+
+| Condition                                             | watchlistImpact |
+| ----------------------------------------------------- | --------------- |
+| Direct hit on Critical                                | high            |
+| Correlated hit on Critical with matching asset class  | high            |
+| Direct on Relevant · correlated on Critical otherwise | medium          |
+| Asset-class-only (and any weaker fit)                 | low             |
+
+Correlated exposure counts only on Critical items — the same gate the feed's
+watchlist filter applies. The label renders with impact color tokens plus
+the word, distinct from the global Critical/Relevant/Context tag (they
+answer different questions).
+
+## Banner takeover rule + feedback loop (v4)
+
+The full takeover is the default for qualifying alerts (compact banner is
+the opt-out). The rule is deterministic, defined once in
+`lib/news/takeover.ts` with named constants and stated verbatim in TRUST.md:
+Critical impact AND (red-folder scheduled release OR recorded reaction ≥
+0.5% index / 5bp rates / 0.75% FX-or-DXY). Relevant/Context never take over.
+The takeover carries **False alarm / Useful** buttons that write
+`lib/feedback` records with `surface: "banner"` — that data (and nothing
+else) governs threshold evolution. The banner's **Explain** opens a
+lightweight chat thread whose first message is a 2–3 sentence factual AI
+brief (explicit brevity instruction in the banner context; same neutral
+system prompt; `explainFallback` on static hosting).
+
+## Replay: behavior taxonomy, points stats, screenshots (v4)
+
+- `MoveBehavior` replaces the binary outcome: `spike-reversal ·
+  reversal-return · sustained · day-bias · no-lasting-effect · unclear`.
+  Persisted v3 entries migrate losslessly (held→sustained,
+  faded→spike-reversal, mixed→unclear) in the local provider's `migrate()`.
+- Entries also record `effectDuration` (free interval) and
+  `initialMovePoints` / `reversalPoints` — the advisor's units. With ≥3
+  recorded entries a folder header leads with the plain-English sentence
+  ("On the drop this event moves ~32 pts on average, then reverses ~141 pts
+  (based on 6 recorded events).") plus the behavior distribution — computed
+  strictly from user-recorded data, like all folder stats.
+- **Screenshots**: ≤3 per entry, downscaled client-side (≤1280px longest
+  edge, JPEG ~0.8) and stored as data URLs through the local provider — a
+  prototype constraint. Quota exhaustion surfaces a friendly "storage full"
+  message (typed `JournalStorageFullError`) instead of silently dropping the
+  entry. **Production moves screenshots to object storage**, with entries
+  keeping references only.
+- Folder view: chart rail (last 5 entries' screenshots → lightbox with full
+  notes) and `MonthDots` (month grid, red occurrence dots with accessible
+  titles, sourced from entry timestamps + the calendar provider).
 
 ## The historical events database (currently mock — must become real)
 
@@ -104,13 +213,13 @@ reaction bonus) is a stand-in for the production weighted model:
 | Event importance             | 15%    | the Critical/Relevant/Context tier          |
 | Source reliability           | 10%    | `sourceVerified` captured, not yet scored   |
 | Recency                      | 10%    | linear age decay in the briefing score      |
-| Correlation relevance        | 10%    | `correlatedTickers` match (Critical only)   |
+| Correlation relevance        | 10%    | correlation-graph chains (Critical only)    |
 | User behavior                | 5%     | **fed by the FeedbackProvider data** — the  |
 |                              |        | ⋯ control's Useful / Not relevant / Wrong   |
 |                              |        | asset / Wrong catalyst judgments            |
 
 Two properties are non-negotiable regardless of weights: rankings must stay
-explainable per-item (trust rule 9 — the "Ranked #N because…" line is the
+explainable per-item (trust rule 9 — the three-pillar rationale is the
 contract), and commercial relationships never enter the model (trust
 rule 10).
 

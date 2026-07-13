@@ -41,8 +41,11 @@ also rendered in-app (Settings → Trust rules, and the page footer).
    the AI receives them as context and never supplies display text for them.
 
 9. **Users can view why an event was ranked.**
-   Current build: every Your Focus item carries a deterministic
-   "Ranked #N because…" line generated from item data + user preferences.
+   Current build: every Your Focus item carries the deterministic
+   three-pillar rationale (your instruments / market impact / why now, plus
+   relevance chains) computed from item data, user preferences and the
+   correlation dataset — an item with nothing specific to the user gets no
+   rationale and ranks low; generic reasons are never emitted.
 
 10. **Advertising or affiliate relationships never influence rankings.**
     Production commitment: the prototype has no advertising; the production

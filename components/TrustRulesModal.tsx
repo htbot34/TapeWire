@@ -39,7 +39,7 @@ const RULES: { rule: string; how: string }[] = [
   },
   {
     rule: "Users can view why an event was ranked.",
-    how: "Every Your Focus item carries a deterministic 'Ranked #N because…' line from item data + your preferences.",
+    how: "Every Your Focus item carries the deterministic three-pillar rationale (your instruments / market impact / why now, plus relevance chains) — generic reasons are never emitted.",
   },
   {
     rule: "Advertising or affiliate relationships never influence rankings.",
@@ -97,7 +97,17 @@ function TrustRulesModal({ onClose }: { onClose: () => void }) {
           ))}
         </ol>
 
-        <p className="mt-4 text-2xs text-text-low">
+        <p className="mt-4 text-2xs leading-relaxed text-text-mid">
+          <span className="font-mono text-2xs uppercase tracking-wide text-text-low">
+            Banner takeover rule ·{" "}
+          </span>
+          An alert takes over only when it is Critical AND (a red-folder
+          scheduled release OR a recorded reaction ≥ 0.5% on an index / 5bp
+          on rates / 0.75% on FX). Deterministic, no exceptions; your False
+          alarm / Useful feedback is what tunes these thresholds.
+        </p>
+
+        <p className="mt-3 text-2xs text-text-low">
           Full text lives in TRUST.md in the repository. Where a rule isn&apos;t
           applicable to the prototype yet, it&apos;s marked a production
           commitment — never quietly skipped.
