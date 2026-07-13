@@ -5,7 +5,9 @@ import { usePrefs } from "@/lib/store";
 
 // Fake-door pricing test for design-partner sessions (see README). Interest
 // is captured per tier to localStorage; nothing is charged, and the modal
-// says so.
+// says so. The Core card also fake-doors a demo tier ("core-demo" in the
+// same interest log) — production demo access must be abuse-resistant, see
+// ARCHITECTURE.md's monetization section.
 
 interface Tier {
   id: string;
@@ -142,6 +144,20 @@ export default function ProModal({ onClose }: { onClose: () => void }) {
                 >
                   {interested ? "✓ Interested" : "I'd pay this"}
                 </button>
+                {t.id === "core" &&
+                  (proTierInterest.includes("core-demo") ? (
+                    <p className="mt-1.5 text-2xs leading-snug text-phos">
+                      ✓ Demo coming soon — you&apos;re on the list.
+                    </p>
+                  ) : (
+                    <button
+                      onClick={() => toggleProTierInterest("core-demo")}
+                      className="mt-1.5 font-mono text-2xs text-text-low underline decoration-ink-700 hover:text-phos"
+                      title="Try Core before paying — records interest, nothing is charged"
+                    >
+                      Try the Core demo
+                    </button>
+                  ))}
               </div>
             );
           })}

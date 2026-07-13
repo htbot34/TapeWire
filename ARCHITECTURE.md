@@ -192,6 +192,21 @@ them up.
 7. **Journal backend.** `JournalProvider` maps 1:1 onto a trivial CRUD API +
    per-user store; the interface already isolates it.
 
+## Monetization (fake-door validation)
+
+The pricing modal is a fake door: per-tier interest and an email land in
+localStorage, nothing is charged. v4 adds a second fake door on the Core
+card — **Try the Core demo** — logged under the same interest mechanism
+(`"core-demo"`), to measure demand for a try-before-buy path separately
+from willingness to pay.
+
+**Production requirement — demo access must be abuse-resistant.** A demo
+tier that hands out full Core on a fresh email is a free-tier with extra
+steps: gate it per person, not per address (IP + device fingerprinting,
+one demo per person, rate-limited issuance), so trials can't be farmed
+with disposable emails. This constraint is why the prototype only logs
+interest instead of opening a demo.
+
 ## Key business risk: content sourcing & licensing (existential — resolve before production build)
 
 User research named two must-have sources: **ForexFactory** (calendar) and
